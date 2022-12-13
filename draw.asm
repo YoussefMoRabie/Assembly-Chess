@@ -1,7 +1,5 @@
 include macros.inc
 
-extrn draw_selector1:far
-extrn draw_selector2:far
 extrn bKing:byte
 extrn wKing:byte
 extrn bQueen:byte
@@ -16,8 +14,15 @@ extrn bPawn:byte
 extrn wPawn:byte
 extrn bSquare:byte
 extrn wSquare:byte
+extrn selector1:byte
+extrn selector2:byte
 
-public draw_cell, get_cell_start, init_draw
+extrn s1_col:word
+extrn s1_row:word
+extrn s2_col:word
+extrn s2_row:word
+
+public draw_cell, get_cell_start, draw_selector1, draw_selector2, init_draw
 public row, col, cell_start, shape_to_draw
 
 .model small
@@ -64,7 +69,7 @@ drawLine endp
 
 get_cell_start proc far
      ;gets cell cell_start from row and col values and stores it in the variable "cell_start"
-     PUSH_ALL
+     push_all
      mov ax,25
      mul col
      mov bx,ax
@@ -75,13 +80,13 @@ get_cell_start proc far
      add ax,bx
 
      mov cell_start,ax
-     POP_ALL
+     pop_all
      ret
 get_cell_start endp
 
 draw_cell proc far
      ;draws a cell with the shape_to_draw at the selected row and col    
-     PUSH_ALL
+     push_all
      mov cx,25
      call get_cell_start
      mov di,cell_start
@@ -90,11 +95,35 @@ draw_cell proc far
           call drawLine
           add di,320
      loop draw_cell_loop
-     POP_ALL
+     pop_all
      ret
 draw_cell endp
 
-;-------------------------------------------------------Exclusive Functions---------------------------------------------------------------------
+draw_selector1 proc far
+    push ax
+    mov shape_to_draw,offset selector1
+    mov ax,s1_col
+    mov col,ax
+    mov ax,s1_row
+    mov row,ax
+    call draw_cell
+    pop ax
+    ret
+draw_selector1 endp
+
+draw_selector2 proc far
+    Push ax
+    mov shape_to_draw,offset selector2
+    mov ax,s2_col
+    mov col,ax
+    mov ax,s2_row
+    mov row,ax
+    call draw_cell
+    Pop ax
+    ret
+draw_selector2 endp
+
+;-------------------------------------------------------Exclusive For Initial Drawing---------------------------------------------------------------------
 
 get_init_piece proc
      ;gets the offset of the initial piece based on row and col and stores it in "shape_to_draw"
@@ -245,18 +274,20 @@ draw_empty_board proc
      ret
 draw_empty_board endp
 
-init_draw proc
-     mov ax,0A000H
-     mov es,ax
-     
+init_draw proc far
+     push_all
      mov ah,0
      mov al,13h
      int 10h
+
+     mov ax,0A000H
+     mov es,ax
 
      call draw_empty_board
      call draw_board_pieces
      call draw_selector1
      call draw_selector2
+     pop_all
      ret
 init_draw endp
 end
