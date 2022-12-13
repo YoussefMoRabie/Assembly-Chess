@@ -304,7 +304,7 @@ main proc far
     mov ax,@data
     mov ds,ax
 
-    mov player_mode,2
+    mov player_mode,0
     call init_draw
     playing:
         call player_movement

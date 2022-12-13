@@ -18,7 +18,7 @@ extrn bSquare:byte
 extrn wSquare:byte
 
 public draw_cell, get_cell_start, init_draw
-public row, col, cell_start, shape_to_draw, init_draw
+public row, col, cell_start, shape_to_draw
 
 .model small
 .stack 64
