@@ -16,14 +16,21 @@ extrn bSquare:byte
 extrn wSquare:byte
 extrn selector1:byte
 extrn selector2:byte
+extrn boardMap:byte
 
 extrn s1_col:word
 extrn s1_row:word
 extrn s2_col:word
 extrn s2_row:word
 
-public draw_cell, get_cell_start, draw_selector1, draw_selector2, init_draw
-public row, col, cell_start, shape_to_draw
+extrn from_row:word
+extrn from_col:word
+extrn to_col:word
+extrn to_row:word
+extrn wFound:word
+
+public draw_cell, get_cell_start, draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell,draw_B_from_cell,draw_W_to_cell,draw_B_to_cell
+public row, col, cell_start, shape_to_draw,check_W_piece
 
 .model small
 .stack 64
@@ -99,6 +106,7 @@ draw_cell proc far
      ret
 draw_cell endp
 
+
 draw_selector1 proc far
     push ax
     mov shape_to_draw,offset selector1
@@ -122,7 +130,121 @@ draw_selector2 proc far
     Pop ax
     ret
 draw_selector2 endp
+;---------------------------------------------------------- move piece ----------------------------------------------------------
 
+move_piece proc far
+     push ax
+     mov ax,to_col
+     mov col,ax
+     mov ax,to_row
+     mov row,ax
+     call draw_cell
+     pop ax
+     ret
+move_piece endp
+
+draw_W_from_cell proc far
+    Push ax
+    mov shape_to_draw,offset wSquare
+    mov ax,from_col
+    mov col,ax
+    mov ax,from_row
+    mov row,ax
+    call draw_cell
+    Pop ax
+    ret
+draw_W_from_cell endp
+
+draw_B_from_cell proc far
+    Push ax
+    mov shape_to_draw,offset bSquare
+    mov ax,from_col
+    mov col,ax
+    mov ax,from_row
+    mov row,ax
+    call draw_cell
+    Pop ax
+    ret
+draw_B_from_cell endp
+
+draw_W_to_cell proc far
+    Push ax
+    mov shape_to_draw,offset wSquare
+    mov ax,to_col
+    mov col,ax
+    mov ax,to_row
+    mov row,ax
+    call draw_cell
+    Pop ax
+    ret
+draw_W_to_cell endp
+
+draw_B_to_cell proc far
+    Push ax
+    mov shape_to_draw,offset bSquare
+    mov ax,to_col
+    mov col,ax
+    mov ax,to_row
+    mov row,ax
+    call draw_cell
+    Pop ax
+    ret
+draw_B_to_cell endp
+
+
+
+check_W_piece proc far
+     PUSH_ALL
+     lea bx,boardMap
+     mov ax,from_row
+     mov cl,8
+     mul cl
+     add ax,from_col
+     add bx,ax
+     mov al,[bx]
+     cmp al,31h
+     je found 
+     cmp al,21h
+     je found 
+     cmp al,22h
+     je found 
+     cmp al,32h
+     je found 
+     cmp al,23h
+     je found 
+     cmp al,33h
+     je found
+     cmp al,50h
+     je found 
+     cmp al,51h
+     je found 
+     cmp al,52h
+     je found 
+     cmp al,53h
+     je found 
+     cmp al,54h
+     je found 
+     cmp al,55h
+     je found 
+     cmp al,56h
+     je found 
+     cmp al,57h
+     je found 
+     cmp al,1Ah
+     je found 
+     cmp al,1Bh
+     je found
+     jmp not_found
+
+     not_found:
+          mov wFound,00h
+          jmp ee
+     found:
+          mov wFound,01h
+     ee:
+     POP_ALL
+     ret
+check_W_piece endp
 ;-------------------------------------------------------Exclusive For Initial Drawing---------------------------------------------------------------------
 
 get_init_piece proc

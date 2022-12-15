@@ -5,6 +5,12 @@ extrn draw_cell:far
 extrn get_cell_start:far
 extrn draw_selector1:far
 extrn draw_selector2:far
+extrn move_piece:far
+extrn draw_W_from_cell:far
+extrn draw_B_from_cell:far
+extrn draw_W_to_cell:far
+extrn draw_B_to_cell:far
+extrn check_W_piece:far
 extrn inline_chat:far
 extrn show_player_name:far
 
@@ -12,6 +18,22 @@ extrn white_deselector:byte
 extrn black_deselector:byte
 extrn red_mark:byte
 extrn blue_mark:byte
+extrn bKing:byte
+extrn wKing:byte
+extrn bQueen:byte
+extrn wQueen:byte
+extrn bRook:byte
+extrn wRook:byte
+extrn bBishop:byte
+extrn wBishop:byte
+extrn bKnight:byte
+extrn wKnight:byte
+extrn bPawn:byte
+extrn wPawn:byte
+extrn bSquare:byte
+extrn wSquare:byte
+extrn selector1:byte
+extrn selector2:byte
 
 extrn shape_to_draw:word
 extrn row:word
@@ -20,12 +42,22 @@ extrn cell_start:word
 extrn inline_x:byte
 extrn inline_y:byte
 
-public s1_row, s1_col, s2_row, s2_col, player_mode, play
+public s1_row, s1_col, s2_row, s2_col, player_mode, play,boardMap,from_row,from_col,to_row,to_col,wFound,boardMap
 
 .MODEL small
 .stack 64
 .DATA 
 player_mode db 3    ;both_players:0 player1:1 player2:2 return_to_menu:3 
+;---------------------------- move from cell to cell ----------------------------
+from_row dw 8
+from_col dw 8
+from_color dw 0 
+to_row dw 0
+to_col dw 0
+to_color dw 0 
+wFound dw 0 
+bFound dw 0 
+;-----------------------------------------------------------------------------
 player_chat db 0
 s1_row dw 7
 s1_col dw 4
@@ -34,6 +66,25 @@ s2_row dw 0
 s2_col dw 4
 s2_color db 0ffh    ;the cell color s2 is standing on, 0:balck 0ffh:white
 direction db 0      ;up:0 down:1 left:2 right:3
+boardMap label byte
+        db 01h, 02h, 03h, 0Bh, 0Ah, 13h, 12h, 11h
+        db 40h, 41h, 42h, 43h, 44h, 45h, 46h, 47h
+        db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        db 50h, 51h, 52h, 53h, 55h, 55h, 56h, 57h
+        db 21h, 22h, 23h, 1Bh, 1Ah, 33h, 32h, 31h
+;;; We have 2 digit. LSB represent the type of piece and MSB represent piece ID
+;LSB : 1 for rock. MSB: 0,1 for black 2,3 for white so 01--> first black rock, 11--> second black rock, 21--> first white rock, 31--> second white rock
+;LSB : 2 for knight. MSB: 0,1 for black 2,3 for white so 02--> first black knight, 12--> second black knight, 22--> first white knight, 32--> second white knight
+;LSB : 3 for bishop. MSB: 0,1 for black 2,3 for white so 03--> first black bishop, 13--> second black bishop, 23--> first white bishop, 33--> second white bishop
+;Lsb : A for King. MSB: 0 for black 1 for white so 0A--> first black King, 1A--> second wight King
+;Lsb : B for Queen. MSB: 0 for black 1 for white so 0B--> first black Queen, 1B--> second wight Queen
+;Lsb : 4 for pawns. MSB: from 0 to 7 represent black pawns 
+;Lsb : 5 for pawns. MSB: from 0 to 7 represent white pawns 
+
+
 
 .code
 ;scan codes in hex
@@ -60,6 +111,8 @@ player_movement proc far
     je only_player2
 
     ;WASD + Q
+    cmp ah,10h
+    je select1
     cmp ah,11h
     je up1
     cmp ah,1fh
@@ -75,6 +128,8 @@ player_movement proc far
 
     ;arrow keys + RShift
     only_player2:
+    ; cmp ah,36h
+    ; je up2
     cmp ah,48h
     je up2
     cmp ah,50h
@@ -84,17 +139,17 @@ player_movement proc far
     cmp ah,4dh
     je right2
 
-    cmp ah,01h
-    je game_to_menu
+    ; cmp ah,01h
+    ; je game_to_menu
 
     ;the key pressed doesn't concern players
     no_key_pressed_game:
     ret
- 
-    ;player mode 3 is a code for returning to the menu
-    game_to_menu:
-    mov player_mode,3
-    ret
+
+    ; ;player mode 3 is a code for returning to the menu
+    ; game_to_menu:
+    ; mov player_mode,3
+    ; ret
 
     toggle_inline_chat:
     not player_chat
@@ -120,7 +175,28 @@ player_movement proc far
     right1:
     mov direction,3
     jmp move1
-
+;----------------------------------------------
+    select1:
+    cmp from_col,8
+    jne moveSelect1
+    PUSH_ALL
+    mov ax,s1_col
+    mov from_col,ax
+    mov ax,s1_row
+    mov from_row,ax
+    mov ax,s1_color
+    mov from_color,ax
+    call check_W_piece
+    cmp wFound,1
+    je CheckEnd
+    mov ax,8
+    mov from_col,ax
+    mov from_row,ax
+    CheckEnd:
+    mov wFound,0
+    POP_ALL
+    ret
+;----------------------------------------------
     up2:
     mov direction,0
     jmp move2
@@ -133,7 +209,119 @@ player_movement proc far
     right2:
     mov direction,3
     jmp move2
+    moveSelect1:
+    push ax
+    mov ax,s1_col
+    mov to_col,ax
+    mov ax,s1_row
+    mov to_row,ax
+    mov ax,s1_color
+    mov to_color,ax
+    pop ax
+    cmp from_color,0
+    je b__cell
+    call draw_W_from_cell
+    jmp con
+    b__cell:
+    call draw_B_from_cell
+    con:
+    cmp to_color,0
+    je b___cell
+    call draw_W_to_cell
+    jmp coon
+    b___cell:
+    call draw_B_to_cell
+    coon:
+    push ax
+    mov ax,to_row
+    mov s1_row,ax
+    mov ax,to_col
+    mov s1_col,ax
+    pop ax
+        PUSH_ALL
+    lea bx,boardMap
+    mov ax,from_row
+    mov cl,8
+    mul cl
+    add ax,from_col
+    add bx,ax
+    mov al,[bx]
+    mov cx,00h
+    mov [bx],cl
+    push ax
+    mov bx , offset boardMap
+    mov ax,to_row
+    mov cx,8
+    mul cx
+    add ax,to_col
+    add bx,ax
+    pop ax
+    mov [bx],al
+    cmp al,31h
+    je w_Rook
+    cmp al,21h
+    je w_Rook
+    cmp al,22h
+    je w_knight
+    cmp al,32h
+    je w_knight
+    cmp al,23h
+    je w_Bishop
+    cmp al,33h
+    je w_Bishop
+    cmp al,50h
+    je w_pawn
+    cmp al,51h
+    je w_pawn
+    cmp al,52h
+    je w_pawn
+    cmp al,53h
+    je w_pawn
+    cmp al,54h
+    je w_pawn
+    cmp al,55h
+    je w_pawn
+    cmp al,56h
+    je w_pawn
+    cmp al,57h
+    je w_pawn
+    cmp al,1Ah
+    je w_King
+    cmp al,1Bh
+    je w_Queen
+    POP_ALL
+;;jmp no_key_pressed_game
 
+
+    w_Queen:
+    mov shape_to_draw,offset wQueen
+    jmp draw_
+    w_King:
+    mov shape_to_draw,offset wKing
+    jmp draw_
+    w_pawn:
+    mov shape_to_draw,offset wPawn
+    jmp draw_
+    w_knight:
+    mov shape_to_draw,offset wKnight
+    jmp draw_
+    w_Bishop:
+    mov shape_to_draw,offset wBishop
+    jmp draw_
+    w_Rook:
+    mov shape_to_draw,offset wRook
+    jmp draw_
+    ; nono:
+    ;     mov shape_to_draw,offset bBishop
+    draw_:
+    mov ax,8
+    mov from_col,ax
+    mov from_row,ax
+    POP_ALL
+    call move_piece
+    call draw_selector1
+
+    ret
     move1:
     call move_selector1
     ret
@@ -144,6 +332,7 @@ player_movement proc far
     
     
 player_movement endp
+;--------------------------------------------------------------------------------------------------------------
 
 ;-------------------------------------------player 1-----------------------------------------------------------
 move_selector1 proc
