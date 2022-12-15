@@ -5,6 +5,8 @@ extrn draw_cell:far
 extrn get_cell_start:far
 extrn draw_selector1:far
 extrn draw_selector2:far
+extrn inline_chat:far
+extrn show_player_name:far
 
 extrn white_deselector:byte
 extrn black_deselector:byte
@@ -15,6 +17,8 @@ extrn shape_to_draw:word
 extrn row:word
 extrn col:word
 extrn cell_start:word
+extrn inline_x:byte
+extrn inline_y:byte
 
 public s1_row, s1_col, s2_row, s2_col, player_mode, play
 
@@ -22,6 +26,7 @@ public s1_row, s1_col, s2_row, s2_col, player_mode, play
 .stack 64
 .DATA 
 player_mode db 3    ;both_players:0 player1:1 player2:2 return_to_menu:3 
+player_chat db 0
 s1_row dw 7
 s1_col dw 4
 s1_color db 0       ;the cell color s1 is standing on, 0:black 0ffh:white
@@ -32,7 +37,7 @@ direction db 0      ;up:0 down:1 left:2 right:3
 
 .code
 ;scan codes in hex
-;w:11   s:1f    a:1e    d:20     q:10 
+;w:11   s:1f    a:1e    d:20     q:10   1:02
 ;up:48 down:50 left:4b right:4d r_shift:36 
 
 ;-----------------------------------listener for both players, changed with player mode-------------------------------------------
@@ -43,6 +48,12 @@ player_movement proc far
     jz no_key_pressed_game
     mov ah,0
     int 16h
+
+    cmp ah,02h
+    je toggle_inline_chat
+
+    cmp player_chat,0ffh
+    je active_inline_chat
 
     ;listens depending on the player_mode
     cmp player_mode,2
@@ -83,6 +94,18 @@ player_movement proc far
     ;player mode 3 is a code for returning to the menu
     game_to_menu:
     mov player_mode,3
+    ret
+
+    toggle_inline_chat:
+    not player_chat
+    cmp player_chat,0
+    je back_to_game
+    call show_player_name
+    back_to_game:
+    ret
+
+    active_inline_chat:
+    call inline_chat
     ret
 
     up1:
@@ -201,7 +224,6 @@ deselect1 proc
     pop ax
     ret
 deselect1 endp
-
 ;-------------------------------------------------player 2----------------------------------------------------------------
 move_selector2 proc
     ;moves the selector1 in the direction in variable "direction"
