@@ -83,7 +83,7 @@ wait_key proc
     jmp no_key_pressed_menu
 
     Game:
-    mov player_mode,0
+    mov player_mode,1
     call play
     call menu
     ret
