@@ -11,6 +11,8 @@ extrn draw_B_from_cell:far
 extrn draw_W_to_cell:far
 extrn draw_B_to_cell:far
 extrn check_W_piece:far
+extrn inline_chat:far
+extrn show_player_name:far
 
 extrn white_deselector:byte
 extrn black_deselector:byte
@@ -37,6 +39,8 @@ extrn shape_to_draw:word
 extrn row:word
 extrn col:word
 extrn cell_start:word
+extrn inline_x:byte
+extrn inline_y:byte
 
 public s1_row, s1_col, s2_row, s2_col, player_mode, play,boardMap,from_row,from_col,to_row,to_col,wFound,bFound,boardMap,wPiece
 
@@ -55,6 +59,7 @@ wFound dw 0
 wPiece dw 0
 bFound dw 0 
 ;-----------------------------------------------------------------------------
+player_chat db 0
 s1_row dw 7
 s1_col dw 4
 s1_color db 0       ;the cell color s1 is standing on, 0:black 0ffh:white
@@ -84,7 +89,7 @@ boardMap label byte
 
 .code
 ;scan codes in hex
-;w:11   s:1f    a:1e    d:20     q:10 
+;w:11   s:1f    a:1e    d:20     q:10   1:02
 ;up:48 down:50 left:4b right:4d r_shift:36 
 
 ;-----------------------------------listener for both players, changed with player mode-------------------------------------------
@@ -96,13 +101,20 @@ player_movement proc far
     mov ah,0
     int 16h
 
+    cmp ah,02h
+    je toggle_inline_chat
+
+    cmp player_chat,0ffh
+    je active_inline_chat
+
+    cmp ah,01h
+    je game_to_menu
+    
     ;listens depending on the player_mode
     cmp player_mode,2
     je only_player2
 
     ;WASD + Q
-    cmp ah,10h
-    je select1
     cmp ah,11h
     je up1
     cmp ah,1fh
@@ -111,6 +123,8 @@ player_movement proc far
     je left1
     cmp ah,20h
     je right1
+    cmp ah,10h
+    je select1
 
     ;skip player2 if the mode is set to 1
     cmp player_mode,1
@@ -129,17 +143,26 @@ player_movement proc far
     cmp ah,4dh
     je right2
 
-    ; cmp ah,01h
-    ; je game_to_menu
-
     ;the key pressed doesn't concern players
     no_key_pressed_game:
     ret
 
-    ; ;player mode 3 is a code for returning to the menu
-    ; game_to_menu:
-    ; mov player_mode,3
-    ; ret
+    ;player mode 3 is a code for returning to the menu
+    game_to_menu:
+    mov player_mode,3
+    ret
+
+    toggle_inline_chat:
+    not player_chat
+    cmp player_chat,0
+    je back_to_game
+    call show_player_name
+    back_to_game:
+    ret
+
+    active_inline_chat:
+    call inline_chat
+    ret
 
     up1:
     mov direction,0
@@ -153,6 +176,19 @@ player_movement proc far
     right1:
     mov direction,3
     jmp move1
+
+    up2:
+    mov direction,0
+    jmp move2
+    down2:
+    mov direction,1
+    jmp move2
+    left2:
+    mov direction,2
+    jmp move2
+    right2:
+    mov direction,3
+    jmp move2
 ;----------------------------------------------
     select1:
     cmp from_col,8
@@ -175,18 +211,7 @@ player_movement proc far
     POP_ALL
     ret
 ;----------------------------------------------
-    up2:
-    mov direction,0
-    jmp move2
-    down2:
-    mov direction,1
-    jmp move2
-    left2:
-    mov direction,2
-    jmp move2
-    right2:
-    mov direction,3
-    jmp move2
+
     moveSelect1:
     push ax
     mov ax,s1_col
@@ -244,8 +269,8 @@ player_movement proc far
     POP_ALL
     call move_piece
     call draw_selector1
-
     ret
+
     move1:
     call move_selector1
     ret
@@ -337,7 +362,6 @@ deselect1 proc
     pop ax
     ret
 deselect1 endp
-
 ;-------------------------------------------------player 2----------------------------------------------------------------
 move_selector2 proc
     ;moves the selector1 in the direction in variable "direction"
