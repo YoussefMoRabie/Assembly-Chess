@@ -220,22 +220,28 @@ player_movement proc far
     mov to_row,ax
     mov ax,s1_color
     mov to_color,ax
-    pop ax
-    cmp from_color,0
-    je b__cell
+    ;pop ax
+    mov ax,from_col
+    add ax,from_row
+    and ax,0001h
+    cmp ax,0000h
+    jne b__cell
     call draw_W_from_cell
     jmp con
     b__cell:
     call draw_B_from_cell
     con:
-    cmp to_color,0
-    je b___cell
+    mov ax,to_col
+    add ax,to_row
+    and ax,0001h
+    cmp ax,0000h
+    jne b___cell
     call draw_W_to_cell
     jmp coon
     b___cell:
     call draw_B_to_cell
     coon:
-    push ax
+    ;push ax
     mov ax,to_row
     mov s1_row,ax
     mov ax,to_col
@@ -268,7 +274,9 @@ player_movement proc far
     mov from_row,ax
     POP_ALL
     call move_piece
+        call draw_selector2
     call draw_selector1
+
     ret
 
     move1:
@@ -435,7 +443,7 @@ deselect2 proc
     jne no_overlapping2
 
     ;both selectors overlapped, so we draw the other selector since we just erased it
-    call draw_selector1
+    ;;call draw_selector1
 
     no_overlapping2:
     pop ax
