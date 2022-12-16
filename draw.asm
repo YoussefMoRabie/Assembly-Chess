@@ -27,12 +27,17 @@ extrn from_row:word
 extrn from_col:word
 extrn to_col:word
 extrn to_row:word
+extrn from_row_:word
+extrn from_col_:word
+extrn to_col_:word
+extrn to_row_:word
 extrn wFound:word
 extrn bFound:word
 extrn wPiece:word
+extrn bPiece:word
 
 public draw_cell, get_cell_start, draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell,draw_B_from_cell,draw_W_to_cell,draw_B_to_cell
-public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece
+public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece,move_piece_,draw_W_from_cell_,draw_B_from_cell_,draw_W_to_cell_,draw_B_to_cell_
 
 .model small
 .stack 64
@@ -254,27 +259,92 @@ check_W_piece proc far
      POP_ALL
      ret
 check_W_piece endp
+;---------------------------------------------------------- move Black piece ----------------------------------------------------------
+
+move_piece_ proc far
+     push ax
+     mov ax,to_col_
+     mov col,ax
+     mov ax,to_row_
+     mov row,ax
+     call draw_cell
+     pop ax
+     ret
+move_piece_ endp
+
+draw_W_from_cell_ proc far
+    Push ax
+    mov shape_to_draw,offset wSquare
+    mov ax,from_col_
+    mov col,ax
+    mov ax,from_row_
+    mov row,ax
+    call draw_cell
+    Pop ax
+    ret
+draw_W_from_cell_ endp
+
+draw_B_from_cell_ proc far
+    Push ax
+    mov shape_to_draw,offset bSquare
+    mov ax,from_col_
+    mov col,ax
+    mov ax,from_row_
+    mov row,ax
+    call draw_cell
+    Pop ax
+    ret
+draw_B_from_cell_ endp
+
+draw_W_to_cell_ proc far
+    Push ax
+    mov shape_to_draw,offset wSquare
+    mov ax,to_col_
+    mov col,ax
+    mov ax,to_row_
+    mov row,ax
+    call draw_cell
+    Pop ax
+    ret
+draw_W_to_cell_ endp
+
+draw_B_to_cell_ proc far
+    Push ax
+    mov shape_to_draw,offset bSquare
+    mov ax,to_col_
+    mov col,ax
+    mov ax,to_row_
+    mov row,ax
+    call draw_cell
+    Pop ax
+    ret
+draw_B_to_cell_ endp
+
 check_B_piece proc far
      PUSH_ALL
      lea bx,boardMap
-     mov ax,from_row
+     mov ax,from_row_
      mov cl,8
      mul cl
-     add ax,from_col
+     add ax,from_col_
      add bx,ax
      mov al,[bx]
+     mov bPiece,offset bRook
      cmp al,11h
      je found_ 
      cmp al,01h
      je found_ 
+     mov bPiece,offset bKnight
      cmp al,02h
      je found_ 
      cmp al,12h
      je found_ 
-     cmp al,03h
+     mov bPiece,offset bBishop
+     cmp al,13h
      je found_ 
      cmp al,03h
      je found_
+     mov bPiece,offset bPawn
      cmp al,40h
      je found_ 
      cmp al,41h
@@ -291,10 +361,10 @@ check_B_piece proc far
      je found_ 
      cmp al,47h
      je found_ 
-     mov shape_to_draw,offset wKing
+     mov bPiece,offset bKing
      cmp al,0Ah
      je found_ 
-     mov shape_to_draw,offset wQueen
+     mov bPiece,offset bQueen
      cmp al,0Bh
      je found_
      jmp not_found_

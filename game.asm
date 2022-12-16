@@ -11,6 +11,12 @@ extrn draw_B_from_cell:far
 extrn draw_W_to_cell:far
 extrn draw_B_to_cell:far
 extrn check_W_piece:far
+extrn move_piece_:far
+extrn draw_W_from_cell_:far
+extrn draw_B_from_cell_:far
+extrn draw_W_to_cell_:far
+extrn draw_B_to_cell_:far
+extrn check_B_piece:far
 extrn inline_chat:far
 extrn show_player_name:far
 
@@ -42,7 +48,7 @@ extrn cell_start:word
 extrn inline_x:byte
 extrn inline_y:byte
 
-public s1_row, s1_col, s2_row, s2_col, player_mode, play,boardMap,from_row,from_col,to_row,to_col,wFound,bFound,boardMap,wPiece
+public s1_row, s1_col, s2_row, s2_col, player_mode, play,boardMap,from_row,from_col,to_row,to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_
 
 .MODEL small
 .stack 64
@@ -57,7 +63,14 @@ to_col dw 0
 to_color dw 0 
 wFound dw 0 
 wPiece dw 0
+bPiece dw 0
 bFound dw 0 
+from_row_ dw 8
+from_col_ dw 8
+from_color_ dw 0 
+to_row_ dw 0
+to_col_ dw 0
+to_color_ dw 0 
 ;-----------------------------------------------------------------------------
 player_chat db 0
 s1_row dw 7
@@ -132,8 +145,6 @@ player_movement proc far
 
     ;arrow keys + RShift
     only_player2:
-    cmp ah,36h
-    je up2
     cmp ah,48h
     je up2
     cmp ah,50h
@@ -142,6 +153,8 @@ player_movement proc far
     je left2
     cmp ah,4dh
     je right2
+    cmp ah,12h
+    je select2
 
     ;the key pressed doesn't concern players
     no_key_pressed_game:
@@ -191,93 +204,13 @@ player_movement proc far
     jmp move2
 ;----------------------------------------------
     select1:
-    cmp from_col,8
-    jne moveSelect1
-    PUSH_ALL
-    mov ax,s1_col
-    mov from_col,ax
-    mov ax,s1_row
-    mov from_row,ax
-    mov ax,s1_color
-    mov from_color,ax
-    call check_W_piece
-    cmp wFound,1
-    je CheckEnd
-    mov ax,8
-    mov from_col,ax
-    mov from_row,ax
-    CheckEnd:
-    mov wFound,0
-    POP_ALL
+    call Select_W
     ret
 ;----------------------------------------------
-
-    moveSelect1:
-    push ax
-    mov ax,s1_col
-    mov to_col,ax
-    mov ax,s1_row
-    mov to_row,ax
-    mov ax,s1_color
-    mov to_color,ax
-    ;pop ax
-    mov ax,from_col
-    add ax,from_row
-    and ax,0001h
-    cmp ax,0000h
-    jne b__cell
-    call draw_W_from_cell
-    jmp con
-    b__cell:
-    call draw_B_from_cell
-    con:
-    mov ax,to_col
-    add ax,to_row
-    and ax,0001h
-    cmp ax,0000h
-    jne b___cell
-    call draw_W_to_cell
-    jmp coon
-    b___cell:
-    call draw_B_to_cell
-    coon:
-    ;push ax
-    mov ax,to_row
-    mov s1_row,ax
-    mov ax,to_col
-    mov s1_col,ax
-    pop ax
-        PUSH_ALL
-    lea bx,boardMap
-    mov ax,from_row
-    mov cl,8
-    mul cl
-    add ax,from_col
-    add bx,ax
-    mov al,[bx]
-    mov cx,00h
-    mov [bx],cl
-    push ax
-    mov bx , offset boardMap
-    mov ax,to_row
-    mov cx,8
-    mul cx
-    add ax,to_col
-    add bx,ax
-    pop ax
-    mov [bx],al
-    mov ax,wPiece
-    mov shape_to_draw,ax
-    draw_:
-    mov ax,8
-    mov from_col,ax
-    mov from_row,ax
-    POP_ALL
-    call move_piece
-        call draw_selector2
-    call draw_selector1
-
+    select2:
+    call Select_B
     ret
+;----------------------------------------------
 
     move1:
     call move_selector1
@@ -443,14 +376,191 @@ deselect2 proc
     jne no_overlapping2
 
     ;both selectors overlapped, so we draw the other selector since we just erased it
-    ;;call draw_selector1
+    call draw_selector1
 
     no_overlapping2:
     pop ax
     ret
 deselect2 endp
 ;--------------------------------------------------------------------------------------------------------------------------
-
+Select_W proc 
+    cmp from_col,8
+    je skip
+    call Change_W_place
+    ret
+    skip:
+    PUSH_ALL
+    mov ax,s1_col
+    mov from_col,ax
+    mov ax,s1_row
+    mov from_row,ax
+    mov ax,s1_color
+    mov from_color,ax
+    call check_W_piece
+    cmp wFound,1
+    je CheckEnd
+    mov ax,8
+    mov from_col,ax
+    mov from_row,ax
+    CheckEnd:
+    mov wFound,0
+    POP_ALL
+    ret
+Select_W endp
+Select_B proc 
+    cmp from_col_,8
+    je skip_
+    call Change_B_place
+    ret
+    skip_:
+    PUSH_ALL
+    mov ax,s2_col
+    mov from_col_,ax
+    mov ax,s2_row
+    mov from_row_,ax
+    mov ax,s2_color
+    mov from_color_,ax
+    call check_B_piece
+    cmp bFound,1
+    je CheckEnd_
+    mov ax,8
+    mov from_col_,ax
+    mov from_row_,ax
+    CheckEnd_:
+    mov bFound,0
+    POP_ALL
+    ret
+Select_B endp
+Change_W_place proc 
+push ax
+    mov ax,s1_col
+    mov to_col,ax
+    mov ax,s1_row
+    mov to_row,ax
+    mov ax,s1_color
+    mov to_color,ax
+    mov ax,from_col
+    add ax,from_row
+    and ax,0001h
+    cmp ax,0000h
+    jne b__cell
+    call draw_W_from_cell
+    jmp con
+    b__cell:
+    call draw_B_from_cell
+    con:
+    mov ax,to_col
+    add ax,to_row
+    and ax,0001h
+    cmp ax,0000h
+    jne b___cell
+    call draw_W_to_cell
+    jmp coon
+    b___cell:
+    call draw_B_to_cell
+    coon:
+    mov ax,to_row
+    mov s1_row,ax
+    mov ax,to_col
+    mov s1_col,ax
+    pop ax
+        PUSH_ALL
+    lea bx,boardMap
+    mov ax,from_row
+    mov cl,8
+    mul cl
+    add ax,from_col
+    add bx,ax
+    mov al,[bx]
+    mov cx,00h
+    mov [bx],cl
+    push ax
+    mov bx , offset boardMap
+    mov ax,to_row
+    mov cx,8
+    mul cx
+    add ax,to_col
+    add bx,ax
+    pop ax
+    mov [bx],al
+    mov ax,wPiece
+    mov shape_to_draw,ax
+    draw_:
+    mov ax,8
+    mov from_col,ax
+    mov from_row,ax
+    POP_ALL
+    call move_piece
+    call draw_selector2
+    call draw_selector1
+    ret
+Change_W_place endp
+;-----------------------------------------------
+Change_B_place proc 
+push ax
+    mov ax,s2_col
+    mov to_col_,ax
+    mov ax,s2_row
+    mov to_row_,ax
+    mov ax,s2_color
+    mov to_color_,ax
+    mov ax,from_col_
+    add ax,from_row_
+    and ax,0001h
+    cmp ax,0000h
+    jne b__cell_
+    call draw_W_from_cell_
+    jmp con_
+    b__cell_:
+    call draw_B_from_cell_
+    con_:
+    mov ax,to_col_
+    add ax,to_row_
+    and ax,0001h
+    cmp ax,0000h
+    jne b___cell_
+    call draw_W_to_cell_
+    jmp coon_
+    b___cell_:
+    call draw_B_to_cell_
+    coon_:
+    mov ax,to_row_
+    mov s2_row,ax
+    mov ax,to_col_
+    mov s2_col,ax
+    pop ax
+        PUSH_ALL
+    lea bx,boardMap
+    mov ax,from_row_
+    mov cl,8
+    mul cl
+    add ax,from_col_
+    add bx,ax
+    mov al,[bx]
+    mov cx,00h
+    mov [bx],cl
+    push ax
+    mov bx , offset boardMap
+    mov ax,to_row_
+    mov cx,8
+    mul cx
+    add ax,to_col_
+    add bx,ax
+    pop ax
+    mov [bx],al
+    mov ax,bPiece
+    mov shape_to_draw,ax
+    draw__:
+    mov ax,8
+    mov from_col_,ax
+    mov from_row_,ax
+    POP_ALL
+    call move_piece_
+    call draw_selector1
+    call draw_selector2
+    ret
+Change_B_place endp
+;--------------------------------------------------------------------------------------------------------------------------
 play proc far
     call init_draw
     playing:
