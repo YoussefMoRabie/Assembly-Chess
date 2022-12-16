@@ -38,7 +38,7 @@ extrn row:word
 extrn col:word
 extrn cell_start:word
 
-public s1_row, s1_col, s2_row, s2_col, player_mode, play,boardMap,from_row,from_col,to_row,to_col,wFound,boardMap
+public s1_row, s1_col, s2_row, s2_col, player_mode, play,boardMap,from_row,from_col,to_row,to_col,wFound,bFound,boardMap,wPiece
 
 .MODEL small
 .stack 64
@@ -52,6 +52,7 @@ to_row dw 0
 to_col dw 0
 to_color dw 0 
 wFound dw 0 
+wPiece dw 0
 bFound dw 0 
 ;-----------------------------------------------------------------------------
 s1_row dw 7
@@ -117,8 +118,8 @@ player_movement proc far
 
     ;arrow keys + RShift
     only_player2:
-    ; cmp ah,36h
-    ; je up2
+    cmp ah,36h
+    je up2
     cmp ah,48h
     je up2
     cmp ah,50h
@@ -234,62 +235,8 @@ player_movement proc far
     add bx,ax
     pop ax
     mov [bx],al
-    cmp al,31h
-    je w_Rook
-    cmp al,21h
-    je w_Rook
-    cmp al,22h
-    je w_knight
-    cmp al,32h
-    je w_knight
-    cmp al,23h
-    je w_Bishop
-    cmp al,33h
-    je w_Bishop
-    cmp al,50h
-    je w_pawn
-    cmp al,51h
-    je w_pawn
-    cmp al,52h
-    je w_pawn
-    cmp al,53h
-    je w_pawn
-    cmp al,54h
-    je w_pawn
-    cmp al,55h
-    je w_pawn
-    cmp al,56h
-    je w_pawn
-    cmp al,57h
-    je w_pawn
-    cmp al,1Ah
-    je w_King
-    cmp al,1Bh
-    je w_Queen
-    POP_ALL
-;;jmp no_key_pressed_game
-
-
-    w_Queen:
-    mov shape_to_draw,offset wQueen
-    jmp draw_
-    w_King:
-    mov shape_to_draw,offset wKing
-    jmp draw_
-    w_pawn:
-    mov shape_to_draw,offset wPawn
-    jmp draw_
-    w_knight:
-    mov shape_to_draw,offset wKnight
-    jmp draw_
-    w_Bishop:
-    mov shape_to_draw,offset wBishop
-    jmp draw_
-    w_Rook:
-    mov shape_to_draw,offset wRook
-    jmp draw_
-    ; nono:
-    ;     mov shape_to_draw,offset bBishop
+    mov ax,wPiece
+    mov shape_to_draw,ax
     draw_:
     mov ax,8
     mov from_col,ax

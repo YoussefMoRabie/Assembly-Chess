@@ -28,9 +28,11 @@ extrn from_col:word
 extrn to_col:word
 extrn to_row:word
 extrn wFound:word
+extrn bFound:word
+extrn wPiece:word
 
 public draw_cell, get_cell_start, draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell,draw_B_from_cell,draw_W_to_cell,draw_B_to_cell
-public row, col, cell_start, shape_to_draw,check_W_piece
+public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece
 
 .model small
 .stack 64
@@ -202,18 +204,22 @@ check_W_piece proc far
      add ax,from_col
      add bx,ax
      mov al,[bx]
+          mov wPiece,offset wRook
      cmp al,31h
      je found 
      cmp al,21h
      je found 
+          mov wPiece,offset wKnight
      cmp al,22h
      je found 
      cmp al,32h
      je found 
+          mov wPiece,offset wBishop
      cmp al,23h
      je found 
      cmp al,33h
      je found
+          mov wPiece,offset wPawn
      cmp al,50h
      je found 
      cmp al,51h
@@ -230,13 +236,16 @@ check_W_piece proc far
      je found 
      cmp al,57h
      je found 
+     mov wPiece,offset wKing
      cmp al,1Ah
      je found 
+     mov wPiece,offset wQueen
      cmp al,1Bh
      je found
      jmp not_found
 
      not_found:
+          ;;mov shape_to_draw,offset bBishop
           mov wFound,00h
           jmp ee
      found:
@@ -245,6 +254,60 @@ check_W_piece proc far
      POP_ALL
      ret
 check_W_piece endp
+check_B_piece proc far
+     PUSH_ALL
+     lea bx,boardMap
+     mov ax,from_row
+     mov cl,8
+     mul cl
+     add ax,from_col
+     add bx,ax
+     mov al,[bx]
+     cmp al,11h
+     je found_ 
+     cmp al,01h
+     je found_ 
+     cmp al,02h
+     je found_ 
+     cmp al,12h
+     je found_ 
+     cmp al,03h
+     je found_ 
+     cmp al,03h
+     je found_
+     cmp al,40h
+     je found_ 
+     cmp al,41h
+     je found_ 
+     cmp al,42h
+     je found_ 
+     cmp al,43h
+     je found_ 
+     cmp al,44h
+     je found_ 
+     cmp al,45h
+     je found_ 
+     cmp al,46h
+     je found_ 
+     cmp al,47h
+     je found_ 
+     mov shape_to_draw,offset wKing
+     cmp al,0Ah
+     je found_ 
+     mov shape_to_draw,offset wQueen
+     cmp al,0Bh
+     je found_
+     jmp not_found_
+
+     not_found_:
+          mov bFound,00h
+          jmp ee_
+     found_:
+          mov bFound,01h
+     ee_:
+     POP_ALL
+     ret
+check_B_piece endp
 ;-------------------------------------------------------Exclusive For Initial Drawing---------------------------------------------------------------------
 
 get_init_piece proc
