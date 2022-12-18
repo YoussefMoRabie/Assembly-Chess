@@ -19,6 +19,8 @@ extrn draw_B_to_cell_:far
 extrn check_B_piece:far
 extrn inline_chat:far
 extrn show_player_name:far
+extrn draw_white_valid:far
+extrn draw_black_valid:far
 
 extrn white_deselector:byte
 extrn black_deselector:byte
@@ -48,7 +50,8 @@ extrn cell_start:word
 extrn inline_x:byte
 extrn inline_y:byte
 
-public s1_row, s1_col, s2_row, s2_col, player_mode, play,boardMap,from_row,from_col,to_row,to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_
+public s1_row, s1_col, s2_row, s2_col,valid_col,piece_type,valid_row, player_mode,play,boardMap,from_row,from_col,to_row
+public to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_
 
 .MODEL small
 .stack 64
@@ -57,6 +60,8 @@ player_mode db 3    ;both_players:0 player1:1 player2:2 return_to_menu:3
 ;---------------------------- move from cell to cell ----------------------------
 from_row dw 8
 from_col dw 8
+valid_row db 8
+valid_col db 8
 from_color dw 0 
 to_row dw 0
 to_col dw 0
@@ -64,6 +69,7 @@ to_color dw 0
 wFound dw 0 
 wPiece dw 0
 bPiece dw 0
+piece_type db 00
 bFound dw 0 
 from_row_ dw 8
 from_col_ dw 8
@@ -80,6 +86,8 @@ s2_row dw 0
 s2_col dw 4
 s2_color db 0ffh    ;the cell color s2 is standing on, 0:balck 0ffh:white
 direction db 0      ;up:0 down:1 left:2 right:3
+valid db 1 ;input for macro to return 1 or 0 based on cell position
+marked db 0 
 boardMap label byte
         db 01h, 02h, 03h, 0Bh, 0Ah, 13h, 12h, 11h
         db 40h, 41h, 42h, 43h, 44h, 45h, 46h, 47h
@@ -98,7 +106,51 @@ boardMap label byte
 ;Lsb : 4 for pawns. MSB: from 0 to 7 represent black pawns 
 ;Lsb : 5 for pawns. MSB: from 0 to 7 represent white pawns 
 
+knightOffset label byte
+            db 1,-2
+            db -1,-2
+            db -1,2
+            db 1,2
+            db 2,1
+            db 2,-1
+            db -2,-1
+            db -2,1
+kingOffset label byte
+            db 1,1
+            db 1,0
+            db 1,-1
+            db -1,1
+            db -1,0
+            db -1,-1
+            db 0,-1
+            db 0,1
 
+bishopOffset label byte
+            db 1,-1
+            db -1,-1
+            db -1,1
+            db 1,1
+
+RookOffset label byte
+            db 1,0
+            db -1,0
+            db 0,1
+            db 0,-1
+
+selectorMap label byte
+        db 8 dup(00h)
+        db 8 dup(00h)
+        db 8 dup(00h)
+        db 8 dup(00h)
+        db 8 dup(00h)
+        db 8 dup(00h)
+        db 8 dup(00h)
+        db 8 dup(00h)
+; for valid cells
+; 00h --> does not have any selector drawn
+; 01h --> have a selector for white
+; 10h --> have a selector for black
+; 11h --> have overlapping selector
 
 .code
 ;scan codes in hex
@@ -291,18 +343,74 @@ deselect1 proc
 
     mov ax,s1_row
     cmp ax,s2_row
-    jne no_overlapping1
+    jne chOv6
     mov ax,s1_col
     cmp ax,s2_col
-    jne no_overlapping1
-
+    jne chOv6
     ;both selectors overlapped, so we draw the other selector since we just erased it
     call draw_selector2
+    jmp no_overlapping1
+
+    chOv6: mov si,offset selectorMap
+    mov ax,s1_row
+    mov cx, s1_col
+    mov dx,8d
+    mul dl
+    add ax,cx
+    add si,AX
+    mov al,10h
+    cmp [si],al
+    mov bx,s1_row
+    mov valid_row,bl
+    mov valid_col,cl
+    jne chOv
+    call draw_white_valid
+    jmp no_overlapping1
+    
+ chOv: 
+    mov al,01h
+    cmp [si],al
+    jne no_overlapping1
+    call draw_black_valid
 
     no_overlapping1:
     pop ax
     ret
 deselect1 endp
+
+deselect_valid1 proc
+
+push ax
+
+    cmp s1_color,0
+    je black_cell11
+    mov shape_to_draw, offset white_deselector
+    jmp white_cell11
+    black_cell11:
+    mov shape_to_draw, offset black_deselector
+    white_cell11:
+    
+    mov ax,s1_col
+    mov col,ax
+    mov ax,s1_row
+    mov row,ax
+    call draw_cell
+
+    mov ax,s1_row
+    cmp ax,s2_row
+    jne no_overlapping11
+    mov ax,s1_col
+    cmp ax,s2_col
+    jne no_overlapping11
+    ;both selectors overlapped, so we draw the other selector since we just erased it
+    call draw_selector2
+    jmp no_overlapping11
+
+
+    no_overlapping11:
+    pop ax
+    ret
+deselect_valid1 endp
 ;-------------------------------------------------player 2----------------------------------------------------------------
 move_selector2 proc
     ;moves the selector1 in the direction in variable "direction"
@@ -368,24 +476,90 @@ deselect2 proc
     mov row,ax
     call draw_cell
 
-    mov ax,s1_row
+     mov ax,s1_row
     cmp ax,s2_row
-    jne no_overlapping2
+    jne chOv5
     mov ax,s1_col
     cmp ax,s2_col
-    jne no_overlapping2
-
-    ;both selectors overlapped, so we draw the other selector since we just erased it
+    jne chOv5
+       ;both selectors overlapped, so we draw the other selector since we just erased it
     call draw_selector1
+    jmp no_overlapping2
+
+    chOv5:  mov si,offset selectorMap
+    mov ax,s2_row
+    mov cx, s2_col
+    mov dx,8d
+    mul dl
+    add ax,cx
+    add si,AX
+    mov al,01h
+    cmp [si],al
+     mov bx,s2_row
+     mov valid_row,bl
+    mov valid_col,cl
+    jne chOv2
+    call draw_black_valid
+    jmp no_overlapping2
+
+    chOv2:
+    mov al,10h
+    cmp [si],al
+    jne no_overlapping2
+    call draw_white_valid
 
     no_overlapping2:
     pop ax
     ret
 deselect2 endp
+
+
+deselect_valid2 proc
+   push ax
+
+    cmp s2_color,0
+    je black_cell22
+    mov shape_to_draw, offset white_deselector
+    jmp white_cell22
+    black_cell22:
+    mov shape_to_draw, offset black_deselector
+    white_cell22:
+    
+    mov ax,s2_col
+    mov col,ax
+    mov ax,s2_row
+    mov row,ax
+    call draw_cell
+
+   
+    mov ax,s1_row
+    cmp ax,s2_row
+    jne no_overlapping22
+    mov ax,s1_col
+    cmp ax,s2_col
+    jne no_overlapping22
+
+    ;both selectors overlapped, so we draw the other selector since we just erased it
+    call draw_selector1
+
+    no_overlapping22:
+    pop ax
+    ret
+deselect_valid2 endp
 ;--------------------------------------------------------------------------------------------------------------------------
 Select_W proc 
     cmp from_col,8
     je skip
+        call isMarkW
+        mov cl,1h
+        cmp marked,cl
+        je s
+        mov ax,8
+        mov from_col,ax
+        mov from_row,ax
+        call unmarkAllW
+        ret
+    s:   
     call Change_W_place
     ret
     skip:
@@ -402,14 +576,156 @@ Select_W proc
     mov ax,8
     mov from_col,ax
     mov from_row,ax
+    jmp fin
     CheckEnd:
-    mov wFound,0
+    call draw_valids
+    fin: mov wFound,0
     POP_ALL
     ret
 Select_W endp
+
+
+draw_valids proc
+push_all
+cmp piece_type,22h
+    jne sec_knight
+    call knight_draw_valid
+    mov piece_type,0
+    jmp exx
+    sec_knight: cmp piece_type,32h
+    jne bKnights 
+    call knight_draw_valid
+    mov piece_type,0
+    jmp exx
+    bKnights:
+    cmp piece_type,02h
+    jne sec_bknight
+    call Bknight_draw_valid
+    mov piece_type,0
+    jmp exx
+    sec_bknight: 
+    cmp piece_type,12h
+    jne pawns
+    call Bknight_draw_valid
+    mov piece_type,0
+    jmp exx
+    pawns: 
+    mov al,piece_type
+    mov ah,0
+    mov dl,10h
+    mov dh,0
+    div dl
+    cmp al,5d
+    jne bPawnss
+    call pawn_draw_valid
+    mov piece_type,0
+    jmp exx
+    bPawnss:
+    cmp al,4d
+    jne bishops
+    call Bpawn_draw_valid
+    mov piece_type,0
+    jmp exx
+  bishops:
+  cmp piece_type,23h
+  jne secBishop
+  mov si, offset bishopOffset
+  call draw_continous_valid
+  mov piece_type,0
+  jmp exx 
+  secBishop:
+    cmp piece_type,33h
+    jne BBishops
+    mov si, offset bishopOffset
+  call draw_continous_valid
+  mov piece_type,0
+  jmp exx
+  BBishops:
+    cmp piece_type,03h
+  jne secBBishop
+  mov si, offset bishopOffset
+  call Bdraw_continous_valid
+  mov piece_type,0
+  jmp exx 
+  SecBBishop:
+   cmp piece_type,13h
+    jne rooks
+    mov si, offset bishopOffset
+  call Bdraw_continous_valid
+  mov piece_type,0
+  jmp exx
+  rooks:
+  cmp piece_type,31h
+  jne secRook
+  mov si, offset RookOffset
+  call draw_continous_valid
+  mov piece_type,0
+  jmp exx 
+  secRook:
+    cmp piece_type,21h
+    jne bRooks
+    mov si, offset RookOffset
+  call draw_continous_valid
+  mov piece_type,0
+jmp exx
+bRooks:
+cmp piece_type,01h
+  jne secBRook
+  mov si, offset RookOffset
+  call Bdraw_continous_valid
+  mov piece_type,0
+  jmp exx 
+  secBRook:
+  cmp piece_type,11h
+    jne queen
+    mov si, offset RookOffset
+  call Bdraw_continous_valid
+  mov piece_type,0
+jmp exx
+  queen:
+   cmp piece_type,1Bh
+    jne bQueenk
+  call queen_draw_valid
+  mov piece_type,0
+  jmp exx
+  bQueenk:
+  cmp piece_type,0Bh
+    jne king
+  call Bqueen_draw_valid
+  mov piece_type,0
+  jmp exx
+  king:
+  cmp piece_type,1Ah   ;01,12
+    jne bKingk
+  call king_draw_valid
+  mov piece_type,0
+  jmp exx
+  bKingk:
+   cmp piece_type,0Ah   ;01,12
+    jne exx
+  call Bking_draw_valid
+  mov piece_type,0
+    exx:
+
+
+pop_all
+ret
+draw_valids endp
+
+
 Select_B proc 
     cmp from_col_,8
     je skip_
+     call isMarkB
+        mov cl,1h
+        cmp marked,cl
+        je sOs
+        mov ax,8
+        mov from_col_,ax
+        mov from_row_,ax
+        call unmarkAllB
+        ret
+    sOs:   
     call Change_B_place
     ret
     skip_:
@@ -426,13 +742,19 @@ Select_B proc
     mov ax,8
     mov from_col_,ax
     mov from_row_,ax
+    jmp ffx
     CheckEnd_:
+    call draw_valids 
+    ffx:
     mov bFound,0
     POP_ALL
     ret
 Select_B endp
+
+;--------------------------------
 Change_W_place proc 
 push ax
+ call unmarkAllW 
     mov ax,s1_col
     mov to_col,ax
     mov ax,s1_row
@@ -498,6 +820,7 @@ Change_W_place endp
 ;-----------------------------------------------
 Change_B_place proc 
 push ax
+call unmarkAllB
     mov ax,s2_col
     mov to_col_,ax
     mov ax,s2_row
@@ -560,7 +883,802 @@ push ax
     call draw_selector2
     ret
 Change_B_place endp
+;------------------------------------------------------------------------------------------------------
+; Helper functions for validating cells
+
+
+isMarkW proc
+push_all
+mov ax,s1_row
+mov bx,s1_col
+mov dx,8d
+mul dx
+add ax,bx
+mov bx,ax
+mov si,offset selectorMap
+mov cl,10h
+add si,bx
+cmp [si],cl
+jne npe
+mov al,1
+mov marked,al
+jmp ex
+npe:
+mov al,0 
+mov marked,al
+
+ex: pop_all
+
+ret
+isMarkW endp
+;-------------------------------
+isMarkB proc
+push_all
+mov ax,s2_row
+mov bx,s2_col
+mov dx,8d
+mul dl
+add ax,bx
+mov bx,ax
+mov si,offset selectorMap
+mov cl,01h
+add si,bx
+cmp [si],cl
+jne npe44
+mov al,1
+mov marked,al
+jmp ex44
+npe44:
+mov al,0 
+mov marked,al
+
+ex44: pop_all
+
+ret
+isMarkB endp
+
+markthisCellW proc ; mark a cell with white mark in selectorMap
+push_all
+mov si,offset selectorMap
+mov ah,0
+mov dh,0
+mov dl,8
+mov al,valid_row
+mul dl
+add al,valid_col
+mov bh,0
+mov bl,al
+mov cl,01h
+cmp [si+bx],cl
+jne singleMark
+mov cl,11h
+mov [si+bx],cl
+jmp outtt
+singleMark: mov cl,10h
+mov [si+bx],cl
+outtt: pop_all
+ret
+markthisCellW endp
+
+markthisCellB proc ; mark a cell with black mark in selectorMap
+push_all
+mov si,offset selectorMap
+mov ah,0
+mov dh,0
+mov dl,8
+mov al,valid_row
+mul dl
+add al,valid_col
+mov bh,0
+mov bl,al
+mov cl,10h
+cmp [si+bx],cl
+jne singleMark1
+mov cl,11h
+mov [si+bx],cl
+jmp outtt2
+singleMark1:
+mov cl,01h
+mov [si+bx],cl
+outtt2: 
+pop_all
+ret
+markthisCellB endp
+
+unmarkAllW proc  ; unmark all cells after second q pressed
+push_all
+mov al,s2_color
+mov ah,0
+push  ax
+mov ax,s2_col
+push AX
+mov ax,s2_row
+push ax
+mov s2_color,0ffh
+mov cx,64d
+mov si,offset selectorMap
+mov al,0 ;row
+mov ah,0
+mov dl,0;col
+mov dh,0
+init:
+mov bl,10h
+cmp [si],bl
+jne overlp
+mov bl,00
+mov [si],bl
+mov s2_row,ax
+mov s2_col,dx
+call deselect_valid2
+jmp conti
+overlp:
+mov bl,11h
+cmp [si],bl
+jne conti
+mov bl,01h
+mov [si],bl
+mov s2_row,ax
+mov s2_col,dx
+call deselect_valid2
+mov valid_col,dl
+mov valid_row,al
+call draw_black_valid
+conti:
+cmp dx,7
+jne nowrap
+mov dx,0
+inc ax
+jmp cn
+nowrap:
+not s2_color
+inc dx
+
+cn: inc si
+dec cx
+jnz init
+
+pop ax 
+mov s2_row,ax
+pop ax
+mov s2_col,ax
+pop AX
+mov s2_color,al
+pop_all
+ret
+unmarkAllW endp
+
+unmarkAllB proc  ; unmark all cells after second q pressed
+push_all
+mov al,s1_color
+mov ah,0
+push  ax
+mov ax,s1_col
+push AX
+mov ax,s1_row
+push ax
+mov s1_color,0ffh
+mov cx,64d
+mov si,offset selectorMap
+mov al,0 ;row
+mov ah,0
+mov dl,0;col
+mov dh,0
+init2:
+mov bl,01h
+cmp [si],bl
+jne overlp2
+mov bl,00
+mov [si],bl
+mov s1_row,ax
+mov s1_col,dx
+call deselect_valid1
+jmp conti2
+overlp2:
+mov bl,11h
+cmp [si],bl
+jne conti2
+mov bl,10h
+mov [si],bl
+mov s1_row,ax
+mov s1_col,dx
+call deselect_valid1
+mov valid_col,dl
+mov valid_row,al
+call draw_white_valid
+conti2:
+cmp dx,7
+jne nowrap2
+mov dx,0
+inc ax
+jmp cn2
+nowrap2:
+not s1_color
+inc dx
+
+cn2: inc si
+dec cx
+jnz init2
+
+pop ax 
+mov s1_row,ax
+pop ax
+mov s1_col,ax
+pop AX
+mov s1_color,al
+pop_all
+ret
+unmarkAllB endp
+
+is_W_here proc ; checks if there is a white piece in a cell
+push_all
+mov ax, from_color
+push ax
+mov ax,wPiece
+push ax
+mov ax,wFound
+push ax
+mov ax,from_col
+push ax
+mov ax,from_row
+push ax
+mov bh,0
+mov dh,0
+mov from_col,bx
+mov from_row,dx
+call check_W_piece
+cmp wFound,1
+jne nope
+mov valid,0
+jmp cnn
+nope: mov valid,1
+cnn: pop ax
+mov from_row,ax
+pop ax
+mov from_col,ax
+pop ax
+mov wFound,ax
+pop ax
+mov wPiece,ax
+pop ax
+mov from_color,ax
+pop_all
+ret
+is_W_here endp
+
+is_B_here proc ; checks if there is a white piece in a cell
+push_all
+mov ax, from_color_
+push ax
+mov ax,bPiece
+push ax
+mov ax,bFound
+push ax
+mov ax,from_col_
+push ax
+mov ax,from_row_
+push ax
+mov bh,0
+mov dh,0
+mov from_col_,bx
+mov from_row_,dx
+call check_B_piece
+cmp bFound,1
+jne nope22
+mov valid,0
+jmp cnn22
+nope22: mov valid,1
+cnn22: pop ax
+mov from_row_,ax
+pop ax
+mov from_col_,ax
+pop ax
+mov bFound,ax
+pop ax
+mov bPiece,ax
+pop ax
+mov from_color_,ax
+pop_all
+ret
+is_B_here endp
+
+isIn proc ; checks if a cell is within board boundaries
+cmp bl,7
+jg no
+cmp bl,0
+jl no
+cmp dl,7
+jg no
+cmp dl,0
+jl no
+mov valid,1
+jmp exit
+no:
+mov valid,0
+exit:
+ret
+isIn endp
+
+;------------------------------------------------------------------------------------------------------
+knight_draw_valid proc 
+push_all
+mov cx,8d
+mov di, offset knightOffset
+
+cont: 
+mov bl,from_col
+mov dl,from_row
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne not_valid
+call is_W_here
+cmp valid,1
+jne not_valid
+mov valid_col,bl
+mov valid_row,dl
+call draw_white_valid
+call markthisCellW
+not_valid:
+dec cx
+jnz cont
+
+
+pop_all
+ret
+
+knight_draw_valid endp
+
+Bknight_draw_valid proc 
+push_all
+mov cx,8d
+mov di, offset knightOffset
+
+cont33: 
+mov bl,from_col_
+mov dl,from_row_
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne not_valid33
+call is_B_here
+cmp valid,1
+jne not_valid33
+mov valid_col,bl
+mov valid_row,dl
+call draw_black_valid
+call markthisCellB
+not_valid33:
+dec cx
+jnz cont33
+
+
+pop_all
+ret
+
+Bknight_draw_valid endp
+
+
+;------------------------------------------------------------------------------------------------------
+
+pawn_draw_valid proc
+push_all
+mov cx,bFound
+push cx
+mov cx,bPiece
+push cx
+mov bx,from_col
+mov ax,from_row
+dec ax ; check if there is a piece direct in front of it / !! there is validation here not done
+push AX
+push bx
+mov dx,8d
+mul dl
+add ax,bx
+mov si,offset boardMap
+add si,ax
+mov cx,00
+pop bx
+pop ax
+cmp [si],cl
+jne nxtvald
+mov valid_row,al
+mov valid_col,bl
+call draw_white_valid
+call markthisCellW
+mov cl,6
+cmp from_row,cl
+jne nxtvald
+sub si,8
+mov cx,00
+cmp [si],cl
+jne nxtvald
+dec ax
+mov valid_row,al
+mov valid_col,bl
+call draw_white_valid
+call markthisCellW
+inc ax
+
+nxtvald:
+inc bx
+mov dx,ax
+call isIn ;////////////////////////////////////////////////
+cmp valid,1
+jne noo
+mov cx,from_col_
+push cx
+mov cx, from_row_
+push cx
+mov from_row_,ax
+mov from_col_,bx
+call check_B_piece
+pop cx
+mov from_row_,cx
+pop cx
+mov from_col_,cx
+mov cl,0
+cmp bFound,cl
+je noo
+mov valid_col,bl
+mov valid_row,al
+call draw_white_valid
+call markthisCellW
+noo:
+sub bx,2
+mov dx,ax
+call isIn
+cmp valid,1
+jne outt
+mov cx,from_col_
+push cx
+mov cx, from_row_
+push cx
+mov from_row_,ax
+mov from_col_,bx
+call check_B_piece
+pop cx
+mov from_row_,cx
+pop cx
+mov from_col_,cx
+mov cl,0
+cmp bFound,cl
+je outt
+mov valid_col,bl
+mov valid_row,dl
+call draw_white_valid
+call markthisCellW
+jmp outt
+
+outt:
+pop cx
+mov bPiece,cx
+pop cx
+mov bFound,cx
+pop_all
+ret
+pawn_draw_valid endp
+
+
+;-------------------------------------------------------------------------------
+
+Bpawn_draw_valid proc
+push_all
+mov cx,wFound
+push cx
+mov cx,wPiece
+push cx
+mov bx,from_col_
+mov ax,from_row_
+inc ax ; check if there is a piece direct in front of it / !! there is validation here not done
+push AX
+push bx
+mov dx,8d
+mul dl
+add ax,bx
+mov si,offset boardMap
+add si,ax
+mov cx,00
+pop bx
+pop ax
+cmp [si],cl
+jne nxtvald5
+mov valid_row,al
+mov valid_col,bl
+call draw_black_valid
+call markthisCellB
+mov cl,1
+cmp from_row_,cl
+jne nxtvald5
+add si,8
+mov cx,00
+cmp [si],cl
+jne nxtvald5
+inc ax
+mov valid_row,al
+mov valid_col,bl
+call draw_black_valid
+call markthisCellB
+dec ax
+
+nxtvald5:
+inc bx
+mov dx,ax
+call isIn ;////////////////////////////////////////////////
+cmp valid,1
+jne noo5
+mov cx,from_col
+push cx
+mov cx, from_row
+push cx
+mov from_row,ax
+mov from_col,bx
+call check_W_piece
+pop cx
+mov from_row,cx
+pop cx
+mov from_col,cx
+mov cl,0
+cmp wFound,cl
+je noo5
+mov valid_col,bl
+mov valid_row,al
+call draw_black_valid
+call markthisCellB
+noo5:
+sub bx,2
+mov dx,ax
+call isIn
+cmp valid,1
+jne outt5
+mov cx,from_col
+push cx
+mov cx, from_row
+push cx
+mov from_row,ax
+mov from_col,bx
+call check_W_piece
+pop cx
+mov from_row,cx
+pop cx
+mov from_col,cx
+mov cl,0
+cmp wFound,cl
+je outt5
+mov valid_col,bl
+mov valid_row,dl
+call draw_black_valid
+call markthisCellB
+jmp outt5
+
+outt5:
+pop cx
+mov wPiece,cx
+pop cx
+mov wFound,cx
+pop_all
+ret
+Bpawn_draw_valid endp
+
 ;--------------------------------------------------------------------------------------------------------------------------
+
+draw_continous_valid proc
+push_all
+mov bx, from_col
+mov ax,from_row
+mov di,offset boardMap
+mov cl,4
+loopOnAllDirection1:
+eachDirection1:
+add al,[si+1]
+add bl,[si]
+mov dx,ax
+call isIn
+cmp valid,1
+je oka1
+jmp anotherDirec1
+oka1: 
+push ax
+push di
+mov dx,8
+mul dl
+add ax,bx
+add di,ax
+mov ch,00
+cmp [di],ch
+pop di
+pop ax
+jne piecefound1
+
+mov valid_row,al
+mov valid_col,bl
+call draw_white_valid
+call markthisCellW
+jmp eachDirection1
+piecefound1:
+mov dx,ax
+call is_W_here
+mov dl,1
+cmp valid,dl
+jne anotherDirec1
+mov valid_col,bl
+mov valid_row,al
+call draw_white_valid
+call markthisCellW
+anotherDirec1:
+add si,2
+mov bx,from_col
+mov ax,from_row
+dec cl
+jnz x12
+jmp sss1
+x12: jmp loopOnAllDirection1
+sss1:
+pop_all
+ret
+draw_continous_valid endp
+
+;----------------------------------------------------------------------------------------------
+
+Bdraw_continous_valid proc
+push_all
+mov bx, from_col_
+mov ax,from_row_
+mov di,offset boardMap
+mov cl,4
+loopOnAllDirection19:
+eachDirection19:
+add al,[si+1]
+add bl,[si]
+mov dx,ax
+call isIn
+cmp valid,1
+je oka19
+jmp anotherDirec19
+oka19: 
+push ax
+push di
+mov dx,8
+mul dl
+add ax,bx
+add di,ax
+mov ch,00
+cmp [di],ch
+pop di
+pop ax
+jne piecefound19
+
+mov valid_row,al
+mov valid_col,bl
+call draw_black_valid
+call markthisCellB
+jmp eachDirection19
+piecefound19:
+mov dx,ax
+call is_B_here
+mov dl,1
+cmp valid,dl
+jne anotherDirec19
+mov valid_col,bl
+mov valid_row,al
+call draw_black_valid
+call markthisCellB
+anotherDirec19:
+add si,2
+mov bx,from_col_
+mov ax,from_row_
+dec cl
+jnz x129
+jmp sss19
+x129: jmp loopOnAllDirection19
+sss19:
+pop_all
+ret
+Bdraw_continous_valid endp
+
+;--------------------------------------------------------------------------------------------------------------------------
+
+queen_draw_valid proc
+push_all
+  mov si, offset bishopOffset
+call draw_continous_valid
+  mov si, offset RookOffset
+call draw_continous_valid
+pop_all
+ret
+queen_draw_valid endp
+
+;-------------------------------------------------------------------------------------------------------------------
+Bqueen_draw_valid proc
+push_all
+  mov si, offset bishopOffset
+call Bdraw_continous_valid
+  mov si, offset RookOffset
+call Bdraw_continous_valid
+pop_all
+ret
+Bqueen_draw_valid endp
+
+;--------------------------------------------------------------------------------------------------------------------------
+
+king_draw_valid proc
+push_all
+mov cx,8d
+mov di, offset kingOffset
+
+cont1: 
+mov bx,from_col
+mov dx,from_row
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne not_valid1
+
+call is_W_here
+
+cmp valid,1
+jne not_valid1
+mov valid_col,bl
+mov valid_row,dl
+call draw_white_valid
+call markthisCellW
+not_valid1:
+dec cx
+jnz cont1
+pop_all
+ret
+king_draw_valid endp
+
+
+;---------------------------------------------------------------------------------------------------------------------------------
+
+
+Bking_draw_valid proc
+push_all
+mov cx,8d
+mov di, offset kingOffset
+
+cont17: 
+mov bx,from_col_
+mov dx,from_row_
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne not_valid17
+
+call is_B_here
+
+cmp valid,1
+jne not_valid17
+mov valid_col,bl
+mov valid_row,dl
+call draw_black_valid
+call markthisCellB
+not_valid17:
+dec cx
+jnz cont17
+pop_all
+ret
+Bking_draw_valid endp
+
+;-----------------------------------------------------------------------------------------------------------------------------------------
+
+
 play proc far
     call init_draw
     playing:

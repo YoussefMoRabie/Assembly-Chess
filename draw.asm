@@ -17,6 +17,10 @@ extrn wSquare:byte
 extrn selector1:byte
 extrn selector2:byte
 extrn boardMap:byte
+extrn valid_row:byte
+extrn valid_col:byte
+extrn piece_type:byte
+
 
 extrn s1_col:word
 extrn s1_row:word
@@ -36,7 +40,8 @@ extrn bFound:word
 extrn wPiece:word
 extrn bPiece:word
 
-public draw_cell, get_cell_start, draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell,draw_B_from_cell,draw_W_to_cell,draw_B_to_cell
+public draw_cell, get_cell_start,draw_valid_cell,draw_white_valid,draw_black_valid ,draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell
+public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell
 public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece,move_piece_,draw_W_from_cell_,draw_B_from_cell_,draw_W_to_cell_,draw_B_to_cell_
 
 .model small
@@ -137,6 +142,34 @@ draw_selector2 proc far
     Pop ax
     ret
 draw_selector2 endp
+
+draw_valid_cell proc 
+    push ax
+    mov al,valid_col
+    mov ah,00
+    mov col,ax
+    mov al,valid_row
+    mov row,ax
+    call draw_cell
+    pop ax
+    ret
+draw_valid_cell endp
+;--------------------------------
+draw_black_valid proc far
+push_all
+    mov shape_to_draw,offset selector1
+     call draw_valid_cell
+     pop_all
+     ret
+draw_black_valid endp
+;--------------------------------
+draw_white_valid proc far
+push_all
+    mov shape_to_draw,offset selector2
+          call draw_valid_cell
+          pop_all
+     ret
+draw_white_valid endp
 ;---------------------------------------------------------- move piece ----------------------------------------------------------
 
 move_piece proc far
@@ -216,10 +249,10 @@ check_W_piece proc far
      je found 
           mov wPiece,offset wKnight
      cmp al,22h
-     je found 
+     je found
      cmp al,32h
-     je found 
-          mov wPiece,offset wBishop
+     je found
+     mov wPiece,offset wBishop
      cmp al,23h
      je found 
      cmp al,33h
@@ -255,6 +288,7 @@ check_W_piece proc far
           jmp ee
      found:
           mov wFound,01h
+          mov piece_type,al
      ee:
      POP_ALL
      ret
@@ -373,6 +407,7 @@ check_B_piece proc far
           mov bFound,00h
           jmp ee_
      found_:
+          mov piece_type,al
           mov bFound,01h
      ee_:
      POP_ALL
