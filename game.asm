@@ -70,6 +70,8 @@ wFound dw 0
 wPiece dw 0
 bPiece dw 0
 piece_type db 00
+Bpiece_type db 00
+Wpiece_type db 00
 bFound dw 0 
 from_row_ dw 8
 from_col_ dw 8
@@ -370,8 +372,15 @@ deselect1 proc
  chOv: 
     mov al,01h
     cmp [si],al
-    jne no_overlapping1
+    jne overlpValid
     call draw_black_valid
+    jmp no_overlapping1
+    overlpValid:
+    mov al,11h  
+    cmp [si],al
+    jne no_overlapping1
+        call draw_white_valid
+        call draw_black_valid
 
     no_overlapping1:
     pop ax
@@ -505,8 +514,14 @@ deselect2 proc
     chOv2:
     mov al,10h
     cmp [si],al
+    jne overlpValid2
+    call draw_white_valid
+    jmp no_overlapping2
+    overlpValid2:mov al,11h
+    cmp [si],al
     jne no_overlapping2
     call draw_white_valid
+    call draw_black_valid
 
     no_overlapping2:
     pop ax
@@ -561,7 +576,18 @@ Select_W proc
         ret
     s:   
     call Change_W_place
-    ret
+    mov cl,8
+    cmp from_col_,cl
+    je returnn
+    mov al,piece_type
+    push AX
+    mov dl,Bpiece_type
+    mov piece_type,dl
+    call unmarkAllB
+    call draw_valids
+    pop ax
+    mov piece_type,al
+    returnn: ret
     skip:
     PUSH_ALL
     mov ax,s1_col
@@ -589,25 +615,33 @@ draw_valids proc
 push_all
 cmp piece_type,22h
     jne sec_knight
+mov al, piece_type
+mov  Wpiece_type,al
     call knight_draw_valid
-    mov piece_type,0
+    
     jmp exx
     sec_knight: cmp piece_type,32h
     jne bKnights 
+mov al, piece_type
+mov  Wpiece_type,al
     call knight_draw_valid
-    mov piece_type,0
+    
     jmp exx
     bKnights:
     cmp piece_type,02h
     jne sec_bknight
+    mov al, piece_type
+mov  Bpiece_type,al
     call Bknight_draw_valid
-    mov piece_type,0
+    
     jmp exx
     sec_bknight: 
     cmp piece_type,12h
     jne pawns
+    mov al, piece_type
+mov  Bpiece_type,al
     call Bknight_draw_valid
-    mov piece_type,0
+    
     jmp exx
     pawns: 
     mov al,piece_type
@@ -617,94 +651,122 @@ cmp piece_type,22h
     div dl
     cmp al,5d
     jne bPawnss
+mov al, piece_type
+mov  Wpiece_type,al
     call pawn_draw_valid
-    mov piece_type,0
+    
     jmp exx
     bPawnss:
     cmp al,4d
     jne bishops
+  mov al, piece_type
+mov  Bpiece_type,al
     call Bpawn_draw_valid
-    mov piece_type,0
+    
     jmp exx
   bishops:
   cmp piece_type,23h
   jne secBishop
   mov si, offset bishopOffset
+mov al, piece_type
+mov  Wpiece_type,al
   call draw_continous_valid
-  mov piece_type,0
+  
   jmp exx 
   secBishop:
     cmp piece_type,33h
     jne BBishops
     mov si, offset bishopOffset
+mov al, piece_type
+mov  Wpiece_type,al
   call draw_continous_valid
-  mov piece_type,0
+  
   jmp exx
   BBishops:
     cmp piece_type,03h
   jne secBBishop
   mov si, offset bishopOffset
+  mov al, piece_type
+mov  Bpiece_type,al
   call Bdraw_continous_valid
-  mov piece_type,0
+  
   jmp exx 
   SecBBishop:
    cmp piece_type,13h
     jne rooks
     mov si, offset bishopOffset
+    mov al, piece_type
+mov  Bpiece_type,al
   call Bdraw_continous_valid
-  mov piece_type,0
+  
   jmp exx
   rooks:
   cmp piece_type,31h
   jne secRook
   mov si, offset RookOffset
+mov al, piece_type
+mov  Wpiece_type,al
   call draw_continous_valid
-  mov piece_type,0
+  
   jmp exx 
   secRook:
     cmp piece_type,21h
     jne bRooks
     mov si, offset RookOffset
+mov al, piece_type
+mov  Wpiece_type,al
   call draw_continous_valid
-  mov piece_type,0
+  
 jmp exx
 bRooks:
 cmp piece_type,01h
   jne secBRook
   mov si, offset RookOffset
+  mov al, piece_type
+mov  Bpiece_type,al
   call Bdraw_continous_valid
-  mov piece_type,0
+  
   jmp exx 
   secBRook:
   cmp piece_type,11h
     jne queen
     mov si, offset RookOffset
+    mov al, piece_type
+mov  Bpiece_type,al
   call Bdraw_continous_valid
-  mov piece_type,0
+  
 jmp exx
   queen:
    cmp piece_type,1Bh
     jne bQueenk
+mov al, piece_type
+mov  Wpiece_type,al
   call queen_draw_valid
-  mov piece_type,0
+  
   jmp exx
   bQueenk:
   cmp piece_type,0Bh
     jne king
+mov al, piece_type
+mov  Bpiece_type,al
   call Bqueen_draw_valid
-  mov piece_type,0
+  
   jmp exx
   king:
   cmp piece_type,1Ah   ;01,12
     jne bKingk
+mov al, piece_type
+mov  Wpiece_type,al
   call king_draw_valid
-  mov piece_type,0
+  
   jmp exx
   bKingk:
    cmp piece_type,0Ah   ;01,12
     jne exx
+mov al, piece_type
+mov  Bpiece_type,al
   call Bking_draw_valid
-  mov piece_type,0
+  
     exx:
 
 
@@ -727,6 +789,19 @@ Select_B proc
         ret
     sOs:   
     call Change_B_place
+     mov cl,8
+    cmp from_col,cl
+    je dummy
+    jmp nodummy
+    dummy: jmp returnn
+    nodummy: mov al,piece_type
+    push AX
+    mov dl,Wpiece_type
+    mov piece_type,dl
+    call unmarkAllW
+    call draw_valids
+    pop ax
+    mov piece_type,al
     ret
     skip_:
     PUSH_ALL
@@ -805,6 +880,17 @@ push ax
     add bx,ax
     pop ax
     mov [bx],al
+    mov cx ,to_col
+    cmp cx, from_col_
+    jne Skip___
+    mov cx ,to_row
+    cmp cx, from_row_
+    jne Skip___
+    call unmarkAllB
+    mov cl,8
+    mov from_col_,cl
+    mov from_row_,cl
+    Skip___:
     mov ax,wPiece
     mov shape_to_draw,ax
     draw_:
@@ -871,6 +957,17 @@ call unmarkAllB
     add bx,ax
     pop ax
     mov [bx],al
+     mov cx ,to_col_
+    cmp cx, from_col
+    jne Skip___2
+    mov cx ,to_row_
+    cmp cx, from_row
+    jne Skip___2
+    call unmarkAllW
+    mov cl,8
+    mov from_col,cl
+    mov from_row,cl
+    Skip___2:
     mov ax,bPiece
     mov shape_to_draw,ax
     draw__:
@@ -900,10 +997,13 @@ mov cl,10h
 add si,bx
 cmp [si],cl
 jne npe
-mov al,1
+yess: mov al,1
 mov marked,al
 jmp ex
 npe:
+mov cl,11h
+cmp [si],cl
+je yess
 mov al,0 
 mov marked,al
 
@@ -925,10 +1025,13 @@ mov cl,01h
 add si,bx
 cmp [si],cl
 jne npe44
-mov al,1
+yea: mov al,1
 mov marked,al
 jmp ex44
 npe44:
+mov cl,11h
+cmp [si],cl 
+je yea
 mov al,0 
 mov marked,al
 
@@ -1043,6 +1146,7 @@ pop ax
 mov s2_col,ax
 pop AX
 mov s2_color,al
+call draw_selector2
 pop_all
 ret
 unmarkAllW endp
@@ -1105,6 +1209,7 @@ pop ax
 mov s1_col,ax
 pop AX
 mov s1_color,al
+call draw_selector1
 pop_all
 ret
 unmarkAllB endp

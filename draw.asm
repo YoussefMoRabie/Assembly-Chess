@@ -8,6 +8,8 @@ extrn bRook:byte
 extrn wRook:byte
 extrn bBishop:byte
 extrn wBishop:byte
+extrn valid1:byte
+extrn valid2:byte
 extrn bKnight:byte
 extrn wKnight:byte
 extrn bPawn:byte
@@ -157,7 +159,7 @@ draw_valid_cell endp
 ;--------------------------------
 draw_black_valid proc far
 push_all
-    mov shape_to_draw,offset selector1
+    mov shape_to_draw,offset valid2
      call draw_valid_cell
      pop_all
      ret
@@ -165,7 +167,7 @@ draw_black_valid endp
 ;--------------------------------
 draw_white_valid proc far
 push_all
-    mov shape_to_draw,offset selector2
+    mov shape_to_draw,offset valid1
           call draw_valid_cell
           pop_all
      ret
