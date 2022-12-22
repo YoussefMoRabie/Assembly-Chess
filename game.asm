@@ -1340,6 +1340,24 @@ pop_all
 ret
 is_B_here endp
 
+isStarhere proc
+push_all
+mov si, offset boardMap
+mov ax,dx
+mov dl,8
+mul dl
+add ax,bx
+add si,ax
+mov bl ,0AAh
+cmp [si],bl
+jne no123
+mov valid,1
+jmp getout
+no123:
+mov valid,0
+getout:pop_all
+ret
+isStarhere endp
 isIn proc ; checks if a cell is within board boundaries
 cmp bl,7
 jg no
@@ -1362,7 +1380,6 @@ knight_draw_valid proc
 push_all
 mov cx,8d
 mov di, offset knightOffset
-
 cont: 
 mov bl,from_col
 mov dl,from_row
@@ -1415,7 +1432,7 @@ mov valid_row,dl
 call draw_black_valid
 call markthisCellB
 not_valid33:
-dec cx
+ dec cx
 jnz cont33
 
 
@@ -1447,8 +1464,11 @@ mov cx,00
 pop bx
 pop ax
 cmp [si],cl
+je ye1s
+mov cl,0AAh
+cmp [si],cl
 jne nxtvald
-mov valid_row,al
+ye1s: mov valid_row,al
 mov valid_col,bl
 call draw_white_valid
 call markthisCellW
@@ -1458,7 +1478,11 @@ jne nxtvald
 sub si,8
 mov cx,00
 cmp [si],cl
+je ye2s
+mov cl,0AAh
+cmp [si],cl
 jne nxtvald
+ye2s:
 dec ax
 mov valid_row,al
 mov valid_col,bl
@@ -1472,6 +1496,7 @@ mov dx,ax
 call isIn ;////////////////////////////////////////////////
 cmp valid,1
 jne noo
+
 mov cx,from_col_
 push cx
 mov cx, from_row_
@@ -1548,7 +1573,11 @@ mov cx,00
 pop bx
 pop ax
 cmp [si],cl
+je ye3s
+mov cl,0AAh
+cmp [si],cl
 jne nxtvald5
+ye3s:
 mov valid_row,al
 mov valid_col,bl
 call draw_black_valid
@@ -1559,7 +1588,11 @@ jne nxtvald5
 add si,8
 mov cx,00
 cmp [si],cl
+je ye4s
+mov cl,0AAh
+cmp [si],cl
 jne nxtvald5
+ye4s:
 inc ax
 mov valid_row,al
 mov valid_col,bl
@@ -1654,8 +1687,11 @@ mov ch,00
 cmp [di],ch
 pop di
 pop ax
+je ye5s
+mov ch,0AAh
+cmp [di],ch
 jne piecefound1
-
+ye5s:
 mov valid_row,al
 mov valid_col,bl
 call draw_white_valid
@@ -1712,8 +1748,11 @@ mov ch,00
 cmp [di],ch
 pop di
 pop ax
+je ye6s
+mov ch,0AAh
+cmp [di],ch
 jne piecefound19
-
+ye6s:
 mov valid_row,al
 mov valid_col,bl
 call draw_black_valid
