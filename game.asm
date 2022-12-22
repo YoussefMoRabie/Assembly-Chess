@@ -1685,19 +1685,21 @@ add ax,bx
 add di,ax
 mov ch,00
 cmp [di],ch
-pop di
-pop ax
 je ye5s
 mov ch,0AAh
 cmp [di],ch
 jne piecefound1
 ye5s:
+pop di
+pop ax
 mov valid_row,al
 mov valid_col,bl
 call draw_white_valid
 call markthisCellW
 jmp eachDirection1
 piecefound1:
+pop di
+pop ax
 mov dx,ax
 call is_W_here
 mov dl,1
@@ -1746,19 +1748,21 @@ add ax,bx
 add di,ax
 mov ch,00
 cmp [di],ch
-pop di
-pop ax
 je ye6s
 mov ch,0AAh
 cmp [di],ch
 jne piecefound19
 ye6s:
+pop di
+pop ax
 mov valid_row,al
 mov valid_col,bl
 call draw_black_valid
 call markthisCellB
 jmp eachDirection19
 piecefound19:
+pop di
+pop ax
 mov dx,ax
 call is_B_here
 mov dl,1
