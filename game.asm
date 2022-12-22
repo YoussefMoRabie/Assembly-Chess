@@ -21,11 +21,12 @@ extrn inline_chat:far
 extrn show_player_name:far
 extrn draw_white_valid:far
 extrn draw_black_valid:far
+extrn Timer:far
 
 extrn white_deselector:byte
 extrn black_deselector:byte
 extrn red_mark:byte
-extrn blue_mark:byte
+extrn Star:byte
 extrn bKing:byte
 extrn wKing:byte
 extrn bQueen:byte
@@ -46,9 +47,11 @@ extrn selector2:byte
 extrn shape_to_draw:word
 extrn row:word
 extrn col:word
+extrn curTime:word
 extrn cell_start:word
 extrn inline_x:byte
 extrn inline_y:byte
+extrn WFT:byte
 
 public s1_row, s1_col, s2_row, s2_col,valid_col,piece_type,valid_row, player_mode,play,boardMap,from_row,from_col,to_row
 public to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_
@@ -107,7 +110,18 @@ boardMap label byte
 ;Lsb : B for Queen. MSB: 0 for black 1 for white so 0B--> first black Queen, 1B--> second wight Queen
 ;Lsb : 4 for pawns. MSB: from 0 to 7 represent black pawns 
 ;Lsb : 5 for pawns. MSB: from 0 to 7 represent white pawns 
-
+;; AA : is a star 
+;--------------------- FREEZING
+LastMoveTime label word
+        dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        ;--------------------------
 knightOffset label byte
             db 1,-2
             db -1,-2
@@ -596,9 +610,25 @@ Select_W proc
     mov from_row,ax
     mov ax,s1_color
     mov from_color,ax
+;Check freezing
+    cmp WFT,0
+    je SkipFreezing2
+  lea bx,LastMoveTime
+  mov ax,from_row
+  mov dl,8
+  mul dl
+  add ax,from_col
+  add bx,ax
+  mov ax,[bx]
+  add al,WFT
+  cmp ax,curTime
+  jg Yarab
+  ;-----
+  SkipFreezing2:
     call check_W_piece
     cmp wFound,1
     je CheckEnd
+    Yarab:
     mov ax,8
     mov from_col,ax
     mov from_row,ax
@@ -836,6 +866,21 @@ push ax
     mov to_row,ax
     mov ax,s1_color
     mov to_color,ax
+    ;---------Bonus
+    push cx
+      lea bx,boardMap
+      mov ax,to_row
+      mov cl,8
+      mul cl
+      add ax,to_col
+      add bx,ax
+      mov al,[bx]
+      cmp al,0AAh
+      Jne no_PowerUp
+      mov WFT,00H
+      no_PowerUp:
+    pop cx
+    ;----------------
     mov ax,from_col
     add ax,from_row
     and ax,0001h
@@ -856,10 +901,11 @@ push ax
     b___cell:
     call draw_B_to_cell
     coon:
-    mov ax,to_row
-    mov s1_row,ax
     mov ax,to_col
     mov s1_col,ax
+    mov ax,to_row
+    mov s1_row,ax
+
     pop ax
         PUSH_ALL
     lea bx,boardMap
@@ -894,6 +940,14 @@ push ax
     mov ax,wPiece
     mov shape_to_draw,ax
     draw_:
+    ;
+    ;
+    cmp WFT,0
+    je SkipFreezing1
+    call FreezingW
+    SkipFreezing1:
+    ;
+    ;
     mov ax,8
     mov from_col,ax
     mov from_row,ax
@@ -1780,13 +1834,65 @@ jnz cont17
 pop_all
 ret
 Bking_draw_valid endp
-
+;------------------------------------------------------- Freezing -------------------------------------------------------------------
+FreezingW proc 
+PUSH_ALL
+mov ax,from_col
+cmp ax,to_col
+jne c_o_n
+mov ax,from_row
+cmp ax,to_row
+jne c_o_n
+ret
+c_o_n:
+    lea bx,LastMoveTime
+    mov ax,to_row
+    mov cl,8
+    mul cl
+    add ax,to_col
+    add bx,ax
+    mov ax,curTime
+    mov [bx],ax
+POP_ALL
+     ret 
+FreezingW endp
+;------------------------------------------------------- PowerUp bonus 1-------------------------------------------------------------------
+PowerUp proc 
+PUSH_ALL
+;get time.
+     mov  ah, 2ch
+     int  21h
+;get star location.
+     mov ax,0
+     mov al,dh
+     mov dh,31
+     div dh
+     add ah ,16
+     mov al,ah
+     mov ah,0
+;set star in boardMap
+     mov si,offset boardMap
+     add si,ax
+     mov cl,0AAh
+     mov[si],cl
+;get star col,row.
+     mov dh,8
+     div dh
+     mov row,al
+     mov col,ah
+     mov shape_to_draw,offset Star
+     call draw_cell
+POP_ALL
+     ret 
+PowerUp endp
 ;-----------------------------------------------------------------------------------------------------------------------------------------
 
 
 play proc far
     call init_draw
+    call PowerUp
     playing:
+    call Timer
         call player_movement
         
         ;we set the player_mode to 3 inside player movement whenever ESC is pressed

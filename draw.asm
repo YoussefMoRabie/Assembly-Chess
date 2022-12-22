@@ -22,13 +22,14 @@ extrn boardMap:byte
 extrn valid_row:byte
 extrn valid_col:byte
 extrn piece_type:byte
+extrn red_mark:byte
+extrn Star:byte
 
 
 extrn s1_col:word
 extrn s1_row:word
 extrn s2_col:word
 extrn s2_row:word
-
 extrn from_row:word
 extrn from_col:word
 extrn to_col:word
@@ -37,13 +38,14 @@ extrn from_row_:word
 extrn from_col_:word
 extrn to_col_:word
 extrn to_row_:word
+
 extrn wFound:word
 extrn bFound:word
 extrn wPiece:word
 extrn bPiece:word
 
 public draw_cell, get_cell_start,draw_valid_cell,draw_white_valid,draw_black_valid ,draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell
-public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell
+public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,curTime,WFT
 public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece,move_piece_,draw_W_from_cell_,draw_B_from_cell_,draw_W_to_cell_,draw_B_to_cell_
 
 .model small
@@ -53,10 +55,101 @@ col dw 0
 row dw 0
 cell_start dw 0
 shape_to_draw dw 0
+;---------------Timer Data------------------
+seconds1 db -1
+seconds2 db 0
+min1 db 0
+min2 db 0
+curTime dw 0
+Last db 0
+WFT db 3  ; White Freezing Time
 
 
 
 .code
+
+;-------------------------------------------------------Timer-------------------------------------------------------------------
+Timer proc far
+PUSH_ALL
+;get time.
+  mov  ah, 2ch
+  int  21h 
+;check if one second has passed.
+  cmp  dh, Last
+  je   temppp
+ 
+  mov Last,dh
+  add  seconds1,1    
+  
+  
+  mov ah,2
+  mov dx,001eh
+  int 10h 
+  
+  
+  
+;display text every second.
+ mov ax,WFT
+;  mov ah,0
+mov curTime ,ax
+mov dh,0
+     mov dl,min2
+     add curTime,dx
+     add dl,'0'
+     int 21h
+     mov ax,curTime
+     mov dl,10
+     mul dl
+     mov curTime ,ax
+     mov ah,2
+     mov dl,min1
+     add curTime,dx
+     add dl,'0'
+     int 21h
+     jmp zzzzz
+     temppp:
+     jmp no_change
+     zzzzz:
+     mov ah,2
+     mov dl,':'
+     int 21h 
+     mov ax,curTime
+     mov dl,10
+     mul dl
+     mov curTime ,ax 
+     mov ah,2
+     mov dl,seconds2
+          add curTime,dx
+     add dl,'0'
+     int 21h
+     mov ax,curTime
+     mov dl,10
+     mul dl
+     mov curTime ,ax
+     mov ah,2
+     mov dl,seconds1
+     add curTime,dx
+     add dl,'0'
+     int 21h
+    cmp seconds1,9
+    jne no_change
+    mov seconds1,-1
+    add seconds2,1
+    
+    cmp seconds2,6
+    jne no_change
+    mov seconds2,0
+    add min1,1 
+    
+    cmp min1,9
+    jne no_change
+    mov min1,0
+    add min2,1
+    ;finish.
+no_change:  
+POP_ALL
+     ret 
+Timer endp
 ;----------------------------------------------------Helping Function for draw_cell----------------------------------------------------
 drawLine proc
      
