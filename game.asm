@@ -1527,8 +1527,14 @@ mov cx,bPiece
 push cx
 mov bx,from_col
 mov ax,from_row
-dec ax ; check if there is a piece direct in front of it / !! there is validation here not done
-push AX
+dec ax
+mov dx,ax
+call isIn
+cmp valid,1
+jne dummyl ; check if there is a piece direct in front of it / !! there is validation here not done
+jmp dummyfree
+dummyl: jmp outt
+dummyfree: push AX
 push bx
 mov dx,8d
 mul dl
@@ -1637,7 +1643,13 @@ push cx
 mov bx,from_col_
 mov ax,from_row_
 inc ax ; check if there is a piece direct in front of it / !! there is validation here not done
-push AX
+mov dx,ax
+call isIn
+cmp valid,1
+jne dummy_
+jmp dummyfree_
+dummy_: jmp outt5
+dummyfree_: push AX
 push bx
 mov dx,8d
 mul dl
