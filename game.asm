@@ -48,10 +48,12 @@ extrn shape_to_draw:word
 extrn row:word
 extrn col:word
 extrn curTime:word
+extrn curTime_:word
 extrn cell_start:word
 extrn inline_x:byte
 extrn inline_y:byte
 extrn WFT:byte
+extrn BFT:byte
 
 public s1_row, s1_col, s2_row, s2_col,valid_col,piece_type,valid_row, player_mode,play,boardMap,from_row,from_col,to_row
 public to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_
@@ -576,10 +578,10 @@ deselect_valid2 proc
     ret
 deselect_valid2 endp
 ;--------------------------------------------------------------------------------------------------------------------------
-Select_W proc 
-    cmp from_col,8
-    je skip
-        call isMarkW
+Select_W proc ;Select White piece to move it
+    cmp from_col,8 ; check if First Q
+    je skip ; Jump if First Q
+        call isMarkW;################################################
         mov cl,1h
         cmp marked,cl
         je s
@@ -589,7 +591,7 @@ Select_W proc
         call unmarkAllW
         ret
     s:   
-    call Change_W_place
+    call Change_W_place  ;move  White piece
     mov cx,8
     cmp from_col_,cx
     je returnn
@@ -602,8 +604,9 @@ Select_W proc
     pop ax
     mov piece_type,al
     returnn: ret
-    skip:
+    skip:   ; if you click first Q
     PUSH_ALL
+    ;Get First Q  coordinates 
     mov ax,s1_col
     mov from_col,ax
     mov ax,s1_row
@@ -627,9 +630,10 @@ Select_W proc
   ;-----
   SkipFreezing2:
     call check_W_piece
-    cmp wFound,1
-    je CheckEnd
+    cmp wFound,1  ; Check if you select one of your pieces
+    je CheckEnd  
     Yarab:
+    ;Return From row and col to their init val
     mov ax,8
     mov from_col,ax
     mov from_row,ax
@@ -806,10 +810,10 @@ ret
 draw_valids endp
 
 
-Select_B proc 
-    cmp from_col_,8
-    je skip_
-     call isMarkB
+Select_B proc ;Select Black piece to move it
+    cmp from_col_,8 ; check if First E
+    je skip_ ; Jump if First E
+     call isMarkB ;#######################################
         mov cl,1h
         cmp marked,cl
         je sOs
@@ -819,7 +823,7 @@ Select_B proc
         call unmarkAllB
         ret
     sOs:   
-    call Change_B_place
+    call Change_B_place   ;move  Black piece
      mov cx,8
     cmp from_col,cx
     je dummy
@@ -834,8 +838,9 @@ Select_B proc
     pop ax
     mov piece_type,al
     ret
-    skip_:
+    skip_:  ; if you click first Q
     PUSH_ALL
+    ;Get First E  coordinates
     mov ax,s2_col
     mov from_col_,ax
     mov ax,s2_row
@@ -843,9 +848,28 @@ Select_B proc
     mov ax,0
     mov al,s2_color
     mov from_color_,ax
+
+;Check freezing
+    cmp BFT,0
+    je SkipFreezing2_
+  lea bx,LastMoveTime
+  mov ax,from_row_
+  mov dl,8
+  mul dl
+  add ax,from_col_
+  add bx,ax
+  mov ax,[bx]
+  add al,BFT
+  cmp ax,curTime_
+  jg Yarab_
+  ;-----
+  SkipFreezing2_:
+
     call check_B_piece
-    cmp bFound,1
+    cmp bFound,1  ; Check if you select one of your pieces
     je CheckEnd_
+    Yarab_:
+    ;Return From_ row and col to their init val
     mov ax,8
     mov from_col_,ax
     mov from_row_,ax
@@ -862,6 +886,7 @@ Select_B endp
 Change_W_place proc 
 push ax
  call unmarkAllW 
+ ;Get the destination cell you want to move the piece to
     mov ax,s1_col
     mov to_col,ax
     mov ax,s1_row
@@ -871,6 +896,7 @@ push ax
     mov to_color,ax
     ;---------Bonus
     push cx
+    ; get index of destination cell in array to freeze it after moving 
       lea bx,boardMap
       mov ax,to_row
       mov cl,8
@@ -880,10 +906,11 @@ push ax
       mov al,[bx]
       cmp al,0AAh
       Jne no_PowerUp
-      mov WFT,00H
+      mov WFT,01H
       no_PowerUp:
     pop cx
     ;----------------
+    ; get source cell color if row + col==odd --> cell is black
     mov ax,from_col
     add ax,from_row
     and ax,0001h
@@ -894,6 +921,7 @@ push ax
     b__cell:
     call draw_B_from_cell
     con:
+        ; get destination cell color if row + col==odd --> cell is black
     mov ax,to_col
     add ax,to_row
     and ax,0001h
@@ -911,6 +939,7 @@ push ax
 
     pop ax
         PUSH_ALL
+        ;update boardMap
     lea bx,boardMap
     mov ax,from_row
     mov cl,8
@@ -951,6 +980,8 @@ push ax
     SkipFreezing1:
     ;
     ;
+        ;Return From row and col to their init val
+
     mov ax,8
     mov from_col,ax
     mov from_row,ax
@@ -964,6 +995,7 @@ Change_W_place endp
 Change_B_place proc 
 push ax
 call unmarkAllB
+ ;Get the destination cell you want to move the piece to
     mov ax,s2_col
     mov to_col_,ax
     mov ax,s2_row
@@ -971,6 +1003,23 @@ call unmarkAllB
     mov ax,0
     mov al,s2_color
     mov to_color_,ax
+        ;---------Bonus
+    push cx
+       ; get index of destination cell in array to freeze it after moving 
+      lea bx,boardMap
+      mov ax,to_row_
+      mov cl,8
+      mul cl
+      add ax,to_col_
+      add bx,ax
+      mov al,[bx]
+      cmp al,0AAh
+      Jne no_PowerUp_
+      mov BFT,01H
+      no_PowerUp_:
+    pop cx
+    ;----------------
+        ; get source cell color if row + col==odd --> cell is black
     mov ax,from_col_
     add ax,from_row_
     and ax,0001h
@@ -981,6 +1030,7 @@ call unmarkAllB
     b__cell_:
     call draw_B_from_cell_
     con_:
+        ; get distinion cell color if row + col==odd --> cell is black
     mov ax,to_col_
     add ax,to_row_
     and ax,0001h
@@ -997,6 +1047,7 @@ call unmarkAllB
     mov s2_col,ax
     pop ax
         PUSH_ALL
+        ;update boardMap
     lea bx,boardMap
     mov ax,from_row_
     mov cl,8
@@ -1015,7 +1066,7 @@ call unmarkAllB
     add bx,ax
     pop ax
     mov [bx],al
-     mov cx ,to_col_
+    mov cx ,to_col_
     cmp cx, from_col
     jne Skip___2
     mov cx ,to_row_
@@ -1029,6 +1080,15 @@ call unmarkAllB
     mov ax,bPiece
     mov shape_to_draw,ax
     draw__:
+    ;
+    ;
+    cmp BFT,0
+    je SkipFreezing1_
+    call FreezingB
+    SkipFreezing1_:
+    ;
+    ;
+    ;Return From_ row and col to their init val
     mov ax,8
     mov from_col_,ax
     mov from_row_,ax
@@ -1885,6 +1945,7 @@ Bking_draw_valid endp
 ;------------------------------------------------------- Freezing -------------------------------------------------------------------
 FreezingW proc 
 PUSH_ALL
+;check if u move to the same cell
 mov ax,from_col
 cmp ax,to_col
 jne c_o_n
@@ -1893,6 +1954,7 @@ cmp ax,to_row
 jne c_o_n
 ret
 c_o_n:
+; store the last move time
     lea bx,LastMoveTime
     mov ax,to_row
     mov cl,8
@@ -1904,6 +1966,30 @@ c_o_n:
 POP_ALL
      ret 
 FreezingW endp
+
+FreezingB proc 
+PUSH_ALL
+;check if u move to the same cell
+mov ax,from_col_
+cmp ax,to_col_
+jne c_o_n_
+mov ax,from_row_
+cmp ax,to_row_
+jne c_o_n_
+ret
+c_o_n_:
+; store the last move time
+    lea bx,LastMoveTime
+    mov ax,to_row_
+    mov cl,8
+    mul cl
+    add ax,to_col_
+    add bx,ax
+    mov ax,curTime_
+    mov [bx],ax
+POP_ALL
+     ret 
+FreezingB endp
 ;------------------------------------------------------- PowerUp bonus 1-------------------------------------------------------------------
 PowerUp proc 
 PUSH_ALL

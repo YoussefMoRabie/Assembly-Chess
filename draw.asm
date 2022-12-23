@@ -45,7 +45,7 @@ extrn wPiece:word
 extrn bPiece:word
 
 public draw_cell, get_cell_start,draw_valid_cell,draw_white_valid,draw_black_valid ,draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell
-public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,curTime,WFT
+public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,curTime,WFT,curTime_,BFT
 public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece,move_piece_,draw_W_from_cell_,draw_B_from_cell_,draw_W_to_cell_,draw_B_to_cell_
 
 .model small
@@ -61,8 +61,10 @@ seconds2 db 0
 min1 db 0
 min2 db 0
 curTime dw 0
+curTime_ dw 0
 Last db 0
 WFT db 3  ; White Freezing Time
+BFT db 3  ; Black Freezing Time
 
 
 
@@ -81,7 +83,7 @@ PUSH_ALL
   mov Last,dh
   add  seconds1,1    
   
-  
+  ; mov cursor
   mov ah,2
   mov dx,001eh
   int 10h 
@@ -89,9 +91,7 @@ PUSH_ALL
   
   
 ;display text every second.
- mov bh,0
- mov bl,WFT
-mov curTime ,bx
+mov curTime,0
 mov dh,0
      mov dl,min2
      add curTime,dx
@@ -131,6 +131,14 @@ mov dh,0
      add curTime,dx
      add dl,'0'
      int 21h
+     mov cx,curTime
+     add cl,BFT
+     mov curTime_,cx
+ mov bh,0
+ mov bl,WFT
+add curTime ,bx
+
+
     cmp seconds1,9
     jne no_change
     mov seconds1,-1
