@@ -9,7 +9,7 @@ public player_name
 .stack 64
 
 .DATA 
-player_name db 16,?,16 dup('$')
+player_name db 100,?,98 dup('$')
 x db 0
 y db 0
 message_offset dw ?
@@ -22,6 +22,7 @@ message1 db "To Start Chatting Press F1$"
 message2 db "To Start The Game (Send Invitation) Press F2$"
 message3 db "To Start The Game (Same Device) Press F3$"
 message4 db "To Exit The Program Press ESC$"
+error_message db "Name lenght must not exceed 13 and begin with a character! $"
 
 .code
 
@@ -48,6 +49,10 @@ menu proc
     mov ah,0
     mov al,3
     int 10h
+
+    mov ch, 32
+    mov ah, 1
+    int 10h 
 
     mov x,0
     mov y,0
@@ -78,7 +83,44 @@ menu proc
     ret
 menu endp
 
+name_error proc
+    push_all
+    mov x,15
+    mov y,12
+    mov message_offset,offset error_message
+    call show_message
+    
+    ;erasing the player name
+    mov cx,98
+    mov bx,2
+
+    erase_name:
+    mov player_name[bx],'$'
+    inc bx
+    loop erase_name
+
+    ;ersing it from screen
+    mov ax,0600h
+    mov bh,7
+    mov cl,15
+    mov ch,11
+    mov dl,79
+    mov dh,11
+    int 10h
+
+    ;returning the cursor to place 
+    mov ah,02h
+    mov bh,0
+    mov dl,15
+    mov dh,11
+    int 10h
+    
+    pop_all
+    ret
+name_error endp
+
 get_player_name proc
+    push_all
     mov ah,0
     mov al,3
     int 10h
@@ -102,9 +144,41 @@ get_player_name proc
     mov dh,11
     int 10h
 
+    ;looping till the entered name is correct
+
+    name_error_loop:
     mov ah,0ah
     mov dx,offset player_name
     int 21h
+    
+    cmp player_name[1],13
+    jg yes_name_error
+    cmp player_name[2],122
+    jg yes_name_error
+    cmp player_name[2],65
+    jl yes_name_error
+    cmp player_name[2],91
+    je yes_name_error
+    cmp player_name[2],92
+    je yes_name_error
+    cmp player_name[2],93
+    je yes_name_error
+    cmp player_name[2],94
+    je yes_name_error
+    cmp player_name[2],95
+    je yes_name_error
+    cmp player_name[2],96
+    je yes_name_error
+
+    jmp no_name_error
+
+    yes_name_error:
+    call name_error
+    jmp name_error_loop
+
+    no_name_error:
+    pop_all
+    ret
 get_player_name endp
 
 wait_key proc
