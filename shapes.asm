@@ -576,24 +576,24 @@ red_mark label byte
 Star label byte
         db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
         db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 20h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 20h, 20h, 20h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 20h, 20h, 20h, 20h, 20h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 20h, 20h, 20h, 20h, 20h, 20h, 20h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
         db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 00h, 00h, 00h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 00h, 00h, 00h, 00h, 00h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 00h, 00h, 00h, 00h, 00h, 00h, 00h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 00h, 00h, 00h, 00h, 00h, 00h, 00h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 00h, 00h, 00h, 00h, 00h, 00h, 00h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 00h, 00h, 00h, 00h, 00h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 00h, 00h, 00h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
-        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ah, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ch, 2ch, 2ch, 2ch, 2ch, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ch, 2ch, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ch, 2ch, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ah, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ah, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 02h, 2ch, 2ch, 2ch, 2ch, 2ch, 2ch, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 02h, 2ch, 2ch, 2ch, 2ch, 02h, 02h, 02h, 02h, 02h, 2ch, 2ch, 2ch, 2ch, 02h, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ch, 2ah, 2ah, 02h, 02h, 02h, 02h, 02h, 2ah, 2ah, 2ch, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h
+        db 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 2ah, 2ch, 2ah, 02h, 02h, 02h, 02h, 02h
         db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
         db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
         db 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h, 02h
