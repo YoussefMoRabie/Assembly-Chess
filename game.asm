@@ -221,7 +221,7 @@ player_movement proc far
     je left2
     cmp ah,4dh
     je right2
-    cmp ah,12h
+    cmp ah,52h
     je select2
 
     ;the key pressed doesn't concern players

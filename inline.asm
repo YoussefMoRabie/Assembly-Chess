@@ -9,7 +9,7 @@ extrn player_name:byte
 .stack 64
 .DATA 
 inline_x db 25
-inline_y db 0
+inline_y db 1
 
 .code
 inline_move_cursor proc
@@ -82,7 +82,7 @@ inline_chat proc far
 
     full_chat:
     call inline_clear
-    mov inline_y,0
+    mov inline_y,1
     call show_player_name
     ret
 inline_chat endp
@@ -91,7 +91,7 @@ inline_clear proc
     mov ax,0600h
     mov bh,0
     mov cl,25
-    mov ch,0
+    mov ch,1
     mov dl,39
     mov dh,24
     int 10h
