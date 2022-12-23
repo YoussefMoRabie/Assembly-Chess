@@ -22,7 +22,7 @@ message1 db "To Start Chatting Press F1$"
 message2 db "To Start The Game (Send Invitation) Press F2$"
 message3 db "To Start The Game (Same Device) Press F3$"
 message4 db "To Exit The Program Press ESC$"
-error_message db "Name lenght must be < 10 and begin with a character! $"
+error_message db "Name lenght must not exceed 13 and begin with a character! $"
 
 .code
 
@@ -151,7 +151,7 @@ get_player_name proc
     mov dx,offset player_name
     int 21h
     
-    cmp player_name[1],10
+    cmp player_name[1],13
     jg yes_name_error
     cmp player_name[2],122
     jg yes_name_error
