@@ -590,8 +590,8 @@ Select_W proc
         ret
     s:   
     call Change_W_place
-    mov cl,8
-    cmp from_col_,cl
+    mov cx,8
+    cmp from_col_,cx
     je returnn
     mov al,piece_type
     push AX
@@ -608,7 +608,8 @@ Select_W proc
     mov from_col,ax
     mov ax,s1_row
     mov from_row,ax
-    mov ax,s1_color
+    mov ax,0
+    mov al,s1_color
     mov from_color,ax
 ;Check freezing
     cmp WFT,0
@@ -819,8 +820,8 @@ Select_B proc
         ret
     sOs:   
     call Change_B_place
-     mov cl,8
-    cmp from_col,cl
+     mov cx,8
+    cmp from_col,cx
     je dummy
     jmp nodummy
     dummy: jmp returnn
@@ -839,7 +840,8 @@ Select_B proc
     mov from_col_,ax
     mov ax,s2_row
     mov from_row_,ax
-    mov ax,s2_color
+    mov ax,0
+    mov al,s2_color
     mov from_color_,ax
     call check_B_piece
     cmp bFound,1
@@ -864,7 +866,8 @@ push ax
     mov to_col,ax
     mov ax,s1_row
     mov to_row,ax
-    mov ax,s1_color
+    mov ax,0
+    mov al,s1_color
     mov to_color,ax
     ;---------Bonus
     push cx
@@ -933,9 +936,9 @@ push ax
     cmp cx, from_row_
     jne Skip___
     call unmarkAllB
-    mov cl,8
-    mov from_col_,cl
-    mov from_row_,cl
+    mov cx,8
+    mov from_col_,cx
+    mov from_row_,cx
     Skip___:
     mov ax,wPiece
     mov shape_to_draw,ax
@@ -965,7 +968,8 @@ call unmarkAllB
     mov to_col_,ax
     mov ax,s2_row
     mov to_row_,ax
-    mov ax,s2_color
+    mov ax,0
+    mov al,s2_color
     mov to_color_,ax
     mov ax,from_col_
     add ax,from_row_
@@ -1018,9 +1022,9 @@ call unmarkAllB
     cmp cx, from_row
     jne Skip___2
     call unmarkAllW
-    mov cl,8
-    mov from_col,cl
-    mov from_row,cl
+    mov cx,8
+    mov from_col,cx
+    mov from_row,cx
     Skip___2:
     mov ax,bPiece
     mov shape_to_draw,ax
@@ -1381,8 +1385,8 @@ push_all
 mov cx,8d
 mov di, offset knightOffset
 cont: 
-mov bl,from_col
-mov dl,from_row
+mov bx,from_col
+mov dx,from_row
 mov al,[di]
 add bl,al
 mov al,[di+1]
@@ -1414,8 +1418,8 @@ mov cx,8d
 mov di, offset knightOffset
 
 cont33: 
-mov bl,from_col_
-mov dl,from_row_
+mov bx,from_col_
+mov dx,from_row_
 mov al,[di]
 add bl,al
 mov al,[di+1]
@@ -1472,8 +1476,8 @@ ye1s: mov valid_row,al
 mov valid_col,bl
 call draw_white_valid
 call markthisCellW
-mov cl,6
-cmp from_row,cl
+mov cx,6
+cmp from_row,cx
 jne nxtvald
 sub si,8
 mov cx,00
@@ -1508,8 +1512,8 @@ pop cx
 mov from_row_,cx
 pop cx
 mov from_col_,cx
-mov cl,0
-cmp bFound,cl
+mov cx,0
+cmp bFound,cx
 je noo
 mov valid_col,bl
 mov valid_row,al
@@ -1532,8 +1536,8 @@ pop cx
 mov from_row_,cx
 pop cx
 mov from_col_,cx
-mov cl,0
-cmp bFound,cl
+mov cx,0
+cmp bFound,cx
 je outt
 mov valid_col,bl
 mov valid_row,dl
@@ -1582,8 +1586,8 @@ mov valid_row,al
 mov valid_col,bl
 call draw_black_valid
 call markthisCellB
-mov cl,1
-cmp from_row_,cl
+mov cx,1
+cmp from_row_,cx
 jne nxtvald5
 add si,8
 mov cx,00
@@ -1617,8 +1621,8 @@ pop cx
 mov from_row,cx
 pop cx
 mov from_col,cx
-mov cl,0
-cmp wFound,cl
+mov cx,0
+cmp wFound,cx
 je noo5
 mov valid_col,bl
 mov valid_row,al
@@ -1638,11 +1642,12 @@ mov from_row,ax
 mov from_col,bx
 call check_W_piece
 pop cx
+
 mov from_row,cx
 pop cx
 mov from_col,cx
-mov cl,0
-cmp wFound,cl
+mov cx,0
+cmp wFound,cx
 je outt5
 mov valid_col,bl
 mov valid_row,dl
@@ -1921,8 +1926,11 @@ PUSH_ALL
 ;get star col,row.
      mov dh,8
      div dh
-     mov row,al
-     mov col,ah
+     mov cx,0
+     mov cl,al
+     mov row,cx
+     mov cl,ah
+     mov col,cx
      mov shape_to_draw,offset Star
      call draw_cell
 POP_ALL

@@ -89,9 +89,9 @@ PUSH_ALL
   
   
 ;display text every second.
- mov ax,WFT
-;  mov ah,0
-mov curTime ,ax
+ mov bh,0
+ mov bl,WFT
+mov curTime ,bx
 mov dh,0
      mov dl,min2
      add curTime,dx
