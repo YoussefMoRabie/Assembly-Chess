@@ -67,7 +67,7 @@ inline_chat proc far
     enter_inline_endl:
     mov inline_x,25
     inc inline_y
-    cmp inline_y,25
+    cmp inline_y,24
     je full_chat
     call show_player_name
     ret
@@ -76,7 +76,7 @@ inline_chat proc far
     inline_endl:
     mov inline_x,25
     inc inline_y
-    cmp inline_y,25
+    cmp inline_y,24
     je full_chat
     ret
 
@@ -93,7 +93,7 @@ inline_clear proc
     mov cl,25
     mov ch,1
     mov dl,39
-    mov dh,24
+    mov dh,23
     int 10h
     ret
 inline_clear endp
