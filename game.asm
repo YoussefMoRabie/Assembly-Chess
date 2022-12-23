@@ -47,16 +47,14 @@ extrn selector2:byte
 extrn shape_to_draw:word
 extrn row:word
 extrn col:word
-extrn curTime:word
-extrn curTime_:word
+
 extrn cell_start:word
 extrn inline_x:byte
 extrn inline_y:byte
-extrn WFT:byte
-extrn BFT:byte
+
 
 public s1_row, s1_col, s2_row, s2_col,valid_col,piece_type,valid_row, player_mode,play,boardMap,from_row,from_col,to_row
-public to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_
+public to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_,update_Last_move_time
 
 .MODEL small
 .stack 64
@@ -95,6 +93,9 @@ s2_color db 0ffh    ;the cell color s2 is standing on, 0:balck 0ffh:white
 direction db 0      ;up:0 down:1 left:2 right:3
 valid db 1 ;input for macro to return 1 or 0 based on cell position
 marked db 0 
+
+WFT db 3  ; White Freezing Time
+BFT db 5 ; Black Freezing Time
 boardMap label byte
         db 01h, 02h, 03h, 0Bh, 0Ah, 13h, 12h, 11h
         db 40h, 41h, 42h, 43h, 44h, 45h, 46h, 47h
@@ -114,7 +115,7 @@ boardMap label byte
 ;Lsb : 5 for pawns. MSB: from 0 to 7 represent white pawns 
 ;; AA : is a star 
 ;--------------------- FREEZING
-LastMoveTime label word
+LastMoveTime label byte
         dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
         dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
         dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
@@ -623,10 +624,9 @@ Select_W proc ;Select White piece to move it
   mul dl
   add ax,from_col
   add bx,ax
-  mov ax,[bx]
-  add al,WFT
-  cmp ax,curTime
-  jg Yarab
+  mov al,[bx]
+  cmp al,0
+  jne Yarab
   ;-----
   SkipFreezing2:
     call check_W_piece
@@ -858,9 +858,8 @@ Select_B proc ;Select Black piece to move it
   mul dl
   add ax,from_col_
   add bx,ax
-  mov ax,[bx]
-  add al,BFT
-  cmp ax,curTime_
+  mov al,[bx]
+  cmp al,0
   jg Yarab_
   ;-----
   SkipFreezing2_:
@@ -1961,8 +1960,8 @@ c_o_n:
     mul cl
     add ax,to_col
     add bx,ax
-    mov ax,curTime
-    mov [bx],ax
+    mov al,WFT
+    mov [bx],al
 POP_ALL
      ret 
 FreezingW endp
@@ -1985,11 +1984,28 @@ c_o_n_:
     mul cl
     add ax,to_col_
     add bx,ax
-    mov ax,curTime_
-    mov [bx],ax
+    mov al,BFT
+    mov [bx],al
 POP_ALL
      ret 
 FreezingB endp
+;-------------------------------------------------------------------------------------------------------------------------------------
+update_Last_move_time proc far
+     push_all
+    lea bx,LastMoveTime
+    mov cx,64
+      update_loop:
+        mov al,[bx]
+        cmp al,0
+        je update_loop_end
+        sub al,1
+        mov [bx],al
+      update_loop_end:
+      inc bx
+      loop update_loop
+    pop_all
+     ret
+update_Last_move_time endp
 ;------------------------------------------------------- PowerUp bonus 1-------------------------------------------------------------------
 PowerUp proc 
 PUSH_ALL

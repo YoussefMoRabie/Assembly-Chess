@@ -1,5 +1,9 @@
 include macros.inc
 
+extrn update_Last_move_time:far
+
+
+
 extrn bKing:byte
 extrn wKing:byte
 extrn bQueen:byte
@@ -45,7 +49,7 @@ extrn wPiece:word
 extrn bPiece:word
 
 public draw_cell, get_cell_start,draw_valid_cell,draw_white_valid,draw_black_valid ,draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell
-public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,curTime,WFT,curTime_,BFT
+public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer
 public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece,move_piece_,draw_W_from_cell_,draw_B_from_cell_,draw_W_to_cell_,draw_B_to_cell_
 
 .model small
@@ -60,11 +64,8 @@ seconds1 db -1
 seconds2 db 0
 min1 db 0
 min2 db 0
-curTime dw 0
-curTime_ dw 0
 Last db 0
-WFT db 3  ; White Freezing Time
-BFT db 3  ; Black Freezing Time
+
 
 
 
@@ -78,11 +79,14 @@ PUSH_ALL
   int  21h 
 ;check if one second has passed.
   cmp  dh, Last
-  je   temppp
+  je   no_change
  
   mov Last,dh
   add  seconds1,1    
   
+    call update_Last_move_time
+
+
   ; mov cursor
   mov ah,2
   mov dx,001eh
@@ -91,52 +95,29 @@ PUSH_ALL
   
   
 ;display text every second.
-mov curTime,0
-mov dh,0
+     mov ah,2
      mov dl,min2
-     add curTime,dx
      add dl,'0'
      int 21h
-     mov ax,curTime
-     mov dl,10
-     mul dl
-     mov curTime ,ax
+     ;------
      mov ah,2
      mov dl,min1
-     add curTime,dx
      add dl,'0'
      int 21h
-     jmp zzzzz
-     temppp:
-     jmp no_change
-     zzzzz:
+     ;------
      mov ah,2
      mov dl,':'
      int 21h 
-     mov ax,curTime
-     mov dl,10
-     mul dl
-     mov curTime ,ax 
+     ;-----
      mov ah,2
      mov dl,seconds2
-          add curTime,dx
      add dl,'0'
      int 21h
-     mov ax,curTime
-     mov dl,10
-     mul dl
-     mov curTime ,ax
+     ;------
      mov ah,2
      mov dl,seconds1
-     add curTime,dx
      add dl,'0'
      int 21h
-     mov cx,curTime
-     add cl,BFT
-     mov curTime_,cx
- mov bh,0
- mov bl,WFT
-add curTime ,bx
 
 
     cmp seconds1,9
@@ -158,6 +139,7 @@ no_change:
 POP_ALL
      ret 
 Timer endp
+
 ;----------------------------------------------------Helping Function for draw_cell----------------------------------------------------
 drawLine proc
      
