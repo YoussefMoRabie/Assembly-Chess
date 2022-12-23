@@ -28,6 +28,7 @@ extrn valid_col:byte
 extrn piece_type:byte
 extrn red_mark:byte
 extrn Star:byte
+extrn EndGame:byte
 
 
 extrn s1_col:word
@@ -49,7 +50,7 @@ extrn wPiece:word
 extrn bPiece:word
 
 public draw_cell, get_cell_start,draw_valid_cell,draw_white_valid,draw_black_valid ,draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell
-public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer
+public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,PrintWinner
 public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece,move_piece_,draw_W_from_cell_,draw_B_from_cell_,draw_W_to_cell_,draw_B_to_cell_
 
 .model small
@@ -65,12 +66,32 @@ seconds2 db 0
 min1 db 0
 min2 db 0
 Last db 0
-
-
-
+;----------Status Bar Data-----------------------
+  White_win db "White Wins$"
+  Black_win db "Black Wins$"
 
 .code
-
+;-------------------------------------------------------Timer-------------------------------------------------------------------
+PrintWinner proc far
+PUSH_ALL
+     ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     ;------
+     cmp EndGame,0Ah
+     jne BWin
+     lea bx,White_win
+     jmp GoPrint
+     BWin:
+     lea bx,Black_win
+     GoPrint:
+mov ah, 9
+mov dx,bx
+int 21h
+     POP_ALL
+     ret 
+PrintWinner endp
 ;-------------------------------------------------------Timer-------------------------------------------------------------------
 Timer proc far
 PUSH_ALL

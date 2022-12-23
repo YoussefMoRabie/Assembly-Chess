@@ -1,5 +1,6 @@
 include macros.inc
 
+extrn PrintWinner:far
 extrn init_draw:far
 extrn draw_cell:far
 extrn get_cell_start:far
@@ -54,7 +55,7 @@ extrn inline_y:byte
 
 
 public s1_row, s1_col, s2_row, s2_col,valid_col,piece_type,valid_row, player_mode,play,boardMap,from_row,from_col,to_row
-public to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_,update_Last_move_time
+public to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_,update_Last_move_time,EndGame
 
 .MODEL small
 .stack 64
@@ -93,6 +94,7 @@ s2_color db 0ffh    ;the cell color s2 is standing on, 0:balck 0ffh:white
 direction db 0      ;up:0 down:1 left:2 right:3
 valid db 1 ;input for macro to return 1 or 0 based on cell position
 marked db 0 
+EndGame db 0   ; if EndGame==0A --> white win
 
 WFT db 3  ; White Freezing Time
 BFT db 5 ; Black Freezing Time
@@ -907,6 +909,11 @@ push ax
       Jne no_PowerUp
       mov WFT,01H
       no_PowerUp:
+      cmp al,0Ah
+      Jne notEndGame
+      mov EndGame,0Ah
+      call PrintWinner
+      notEndGame:
     pop cx
     ;----------------
     ; get source cell color if row + col==odd --> cell is black
@@ -1016,6 +1023,11 @@ call unmarkAllB
       Jne no_PowerUp_
       mov BFT,01H
       no_PowerUp_:
+      cmp al,1Ah
+      Jne notEndGame_
+      mov EndGame,1Ah
+      call PrintWinner
+      notEndGame_:
     pop cx
     ;----------------
         ; get source cell color if row + col==odd --> cell is black
@@ -2048,12 +2060,22 @@ play proc far
     call Timer
         call player_movement
         
+        cmp EndGame,0
+        je continue_game
+        wait_F4:
+                mov ah,0
+                int 16h
+                cmp ah,3eh
+                je esc_pressed
+        jmp wait_F4
+        continue_game:
         ;we set the player_mode to 3 inside player movement whenever ESC is pressed
         cmp player_mode,3
         je esc_pressed
     jmp playing
 
     esc_pressed:
+    mov player_mode,3
     ret 
 play endp
 end
