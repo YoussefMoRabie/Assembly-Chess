@@ -231,14 +231,18 @@ reset_game proc far
 
   mov ax,@data
   mov es,ax
+  
   mov di,offset boardMap
   mov si,offset init_boardmap
   mov cx,32
   rep movsw
-
-  mov ax,@data 
-  mov es,ax
+  
   mov di,offset LastMoveTime
+  mov al,0
+  mov cx,32
+  rep stosw
+
+  mov di,offset selectorMap
   mov al,0
   mov cx,32
   rep stosw
