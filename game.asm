@@ -54,8 +54,9 @@ extrn inline_x:byte
 extrn inline_y:byte
 
 
+
 public s1_row, s1_col, s2_row, s2_col,valid_col,piece_type,valid_row, player_mode,play,boardMap,from_row,from_col,to_row
-public to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_,update_Last_move_time,EndGame
+public to_col,wFound,bFound,boardMap,wPiece,bPiece,from_row_,from_col_,to_row_,to_col_,update_Last_move_time,EndGame,reset_game
 
 .MODEL small
 .stack 64
@@ -98,6 +99,17 @@ EndGame db 0   ; if EndGame==0A --> white win
 
 WFT db 3  ; White Freezing Time
 BFT db 5 ; Black Freezing Time
+
+init_boardMap label byte  ;used for resetting the game
+        db 01h, 02h, 03h, 0Bh, 0Ah, 13h, 12h, 11h
+        db 40h, 41h, 42h, 43h, 44h, 45h, 46h, 47h
+        db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        db 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
+        db 50h, 51h, 52h, 53h, 55h, 55h, 56h, 57h
+        db 21h, 22h, 23h, 1Bh, 1Ah, 33h, 32h, 31h
+
 boardMap label byte
         db 01h, 02h, 03h, 0Bh, 0Ah, 13h, 12h, 11h
         db 40h, 41h, 42h, 43h, 44h, 45h, 46h, 47h
@@ -178,6 +190,63 @@ selectorMap label byte
 ;w:11   s:1f    a:1e    d:20     q:10   1:02
 ;up:48 down:50 left:4b right:4d r_shift:36 
 
+reset_game proc far
+  ;resets all game variables to their initial values
+  push_all
+  mov player_mode, 3 
+  mov from_row, 8
+  mov from_col, 8
+  mov valid_row, 8
+  mov valid_col, 8
+  mov from_color, 0 
+  mov to_row, 0
+  mov to_col, 0
+  mov to_color, 0 
+  mov wFound, 0 
+  mov wPiece, 0
+  mov bPiece, 0
+  mov piece_type, 00
+  mov Bpiece_type, 00
+  mov Wpiece_type, 00
+  mov bFound, 0 
+  mov from_row_, 8
+  mov from_col_, 8
+  mov from_color_, 0 
+  mov to_row_, 0
+  mov to_col_, 0
+  mov to_color_, 0 
+  mov player_chat, 0
+  mov s1_row, 7
+  mov s1_col, 4
+  mov s1_color, 0       
+  mov s2_row, 0
+  mov s2_col, 4
+  mov s2_color, 0ffh    
+  mov direction, 0    
+  mov valid, 1 
+  mov marked, 0 
+  mov EndGame, 0 
+  mov WFT, 3  
+  mov BFT, 3
+
+  mov ax,@data
+  mov es,ax
+  mov di,offset boardMap
+  mov si,offset init_boardmap
+  mov cx,32
+  rep movsw
+
+  mov ax,@data 
+  mov es,ax
+  mov di,offset LastMoveTime
+  mov al,0
+  mov cx,32
+  rep stosw
+
+  pop_all
+  ret
+reset_game endp
+
 ;-----------------------------------listener for both players, changed with player mode-------------------------------------------
 player_movement proc far
     ;gets the key pressed and checks if it concerns a player, then calls the appropriate function
@@ -193,7 +262,7 @@ player_movement proc far
     cmp player_chat,0ffh
     je active_inline_chat
 
-    cmp ah,01h
+    cmp ah,3eh
     je game_to_menu
     
     ;listens depending on the player_mode
@@ -1294,7 +1363,7 @@ mov cx,64d
 mov si,offset selectorMap
 mov al,0 ;row
 mov ah,0
-mov dl,0;col
+mov dl,0 ;col
 mov dh,0
 init2:
 mov bl,01h
@@ -2075,19 +2144,18 @@ play proc far
         cmp EndGame,0
         je continue_game
         wait_F4:
-                mov ah,0
-                int 16h
-                cmp ah,3eh
-                je esc_pressed
+            mov ah,0
+            int 16h
+            cmp ah,3eh
+            je F4_pressed
         jmp wait_F4
         continue_game:
-        ;we set the player_mode to 3 inside player movement whenever ESC is pressed
+        ;a player pressed f4 in the middle of the game, so we set player_mode to 3 inside player_movement and return to menu
         cmp player_mode,3
-        je esc_pressed
+        je F4_pressed
     jmp playing
 
-    esc_pressed:
-    mov player_mode,3
+    F4_pressed:
     ret 
 play endp
 end
