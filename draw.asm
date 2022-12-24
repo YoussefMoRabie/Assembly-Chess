@@ -249,7 +249,7 @@ draw_selector2 proc far
     ret
 draw_selector2 endp
 
-draw_valid_cell proc 
+draw_valid_cell proc  ; draw the highlight for valid cells
     push ax
     mov al,valid_col
     mov ah,00
@@ -261,7 +261,7 @@ draw_valid_cell proc
     ret
 draw_valid_cell endp
 ;--------------------------------
-draw_black_valid proc far
+draw_black_valid proc far ;draw highlight for white 
 push_all
     mov shape_to_draw,offset valid2
      call draw_valid_cell
@@ -269,7 +269,7 @@ push_all
      ret
 draw_black_valid endp
 ;--------------------------------
-draw_white_valid proc far
+draw_white_valid proc far ;draw highlight for white 
 push_all
     mov shape_to_draw,offset valid1
           call draw_valid_cell

@@ -64,8 +64,8 @@ player_mode db 3    ;both_players:0 player1:1 player2:2 return_to_menu:3
 ;---------------------------- move from cell to cell ----------------------------
 from_row dw 8
 from_col dw 8
-valid_row db 8
-valid_col db 8
+valid_row db 8  ; row of the valid cell to be drawn
+valid_col db 8  ; column of the valid cell to be drawn
 from_color dw 0 
 to_row dw 0
 to_col dw 0
@@ -73,10 +73,10 @@ to_color dw 0
 wFound dw 0 
 wPiece dw 0
 bPiece dw 0
-piece_type db 00
-Bpiece_type db 00
-Wpiece_type db 00
-bFound dw 0 
+piece_type db 00  ; code for the piece selected
+Bpiece_type db 00 ; code of selected black piece 
+Wpiece_type db 00 ; code for selected white piece
+bFound dw 0       
 from_row_ dw 8
 from_col_ dw 8
 from_color_ dw 0 
@@ -127,7 +127,7 @@ LastMoveTime label byte
         dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
         dw 00h, 00h, 00h, 00h, 00h, 00h, 00h, 00h
         ;--------------------------
-knightOffset label byte
+knightOffset label byte  ; valid offsets for knight moves
             db 1,-2
             db -1,-2
             db -1,2
@@ -136,7 +136,7 @@ knightOffset label byte
             db 2,-1
             db -2,-1
             db -2,1
-kingOffset label byte
+kingOffset label byte ; valid offsets for king moves
             db 1,1
             db 1,0
             db 1,-1
@@ -146,19 +146,19 @@ kingOffset label byte
             db 0,-1
             db 0,1
 
-bishopOffset label byte
+bishopOffset label byte ; valid offsets for bishop moves
             db 1,-1
             db -1,-1
             db -1,1
             db 1,1
 
-RookOffset label byte
+RookOffset label byte   ; valid offsets for rook moves
             db 1,0
             db -1,0
             db 0,1
             db 0,-1
 
-selectorMap label byte
+selectorMap label byte   ;map for the cell having highlight for being valid
         db 8 dup(00h)
         db 8 dup(00h)
         db 8 dup(00h)
@@ -364,15 +364,16 @@ deselect1 proc
 
     mov ax,s1_row
     cmp ax,s2_row
-    jne chOv6
+    jne deselect1_chOv
     mov ax,s1_col
     cmp ax,s2_col
-    jne chOv6
+    jne deselect1_chOv
     ;both selectors overlapped, so we draw the other selector since we just erased it
     call draw_selector2
     jmp no_overlapping1
 
-    chOv6: mov si,offset selectorMap
+    deselect1_chOv: ;checking if there is overlapping between the selector and white highlighted cells and if so, draw the highlight again
+    mov si,offset selectorMap
     mov ax,s1_row
     mov cx, s1_col
     mov dx,8d
@@ -384,17 +385,18 @@ deselect1 proc
     mov bx,s1_row
     mov valid_row,bl
     mov valid_col,cl
-    jne chOv
+    jne deselect1_chOv2
     call draw_white_valid
-    jmp no_overlapping1
+    jmp no_overlapping1 
     
- chOv: 
+ deselect1_chOv2:  ;checking if there is overlapping between the selector and black highlighted cells and if so, draw the highlight again
     mov al,01h
     cmp [si],al
-    jne overlpValid
+    jne deselect1_overlpValid
     call draw_black_valid
     jmp no_overlapping1
-    overlpValid:
+
+   deselect1_overlpValid: ;checking if there is overlapping between the selector and black&white highlighted cells and if so, draw the highlight again
     mov al,11h  
     cmp [si],al
     jne no_overlapping1
@@ -406,7 +408,7 @@ deselect1 proc
     ret
 deselect1 endp
 
-deselect_valid1 proc
+deselect_valid1 proc ; removes the highlight valid cell
 
 push ax
 
@@ -506,15 +508,16 @@ deselect2 proc
 
      mov ax,s1_row
     cmp ax,s2_row
-    jne chOv5
+    jne deselect2_chOv
     mov ax,s1_col
     cmp ax,s2_col
-    jne chOv5
+    jne deselect2_chOv
        ;both selectors overlapped, so we draw the other selector since we just erased it
     call draw_selector1
     jmp no_overlapping2
 
-    chOv5:  mov si,offset selectorMap
+    deselect2_chOv:  ;checking if there is overlapping between the selector and white highlighted cells and if so, draw the highlight again
+    mov si,offset selectorMap
     mov ax,s2_row
     mov cx, s2_col
     mov dx,8d
@@ -526,17 +529,19 @@ deselect2 proc
      mov bx,s2_row
      mov valid_row,bl
     mov valid_col,cl
-    jne chOv2
+    jne deselect2_chOv2
     call draw_black_valid
     jmp no_overlapping2
 
-    chOv2:
+    deselect2_chOv2:        ;checking if there is overlapping between the selector and black highlighted cells and if so, draw the highlight again
     mov al,10h
     cmp [si],al
     jne overlpValid2
     call draw_white_valid
     jmp no_overlapping2
-    overlpValid2:mov al,11h
+
+    overlpValid2:   ;checking if there is overlapping between the selector and white&black highlighted cells and if so, draw the highlight again
+    mov al,11h
     cmp [si],al
     jne no_overlapping2
     call draw_white_valid
@@ -548,7 +553,7 @@ deselect2 proc
 deselect2 endp
 
 
-deselect_valid2 proc
+deselect_valid2 proc        ; removes the highlight valid cell
    push ax
 
     cmp s2_color,0
@@ -584,17 +589,19 @@ deselect_valid2 endp
 Select_W proc ;Select White piece to move it
     cmp from_col,8 ; check if First Q
     je skip ; Jump if First Q
-        call isMarkW;################################################
+        call isMarkW  ;checks if this a valid cell to move to
         mov cl,1h
         cmp marked,cl
-        je s
-        mov ax,8
+        je Highlighted
+        mov ax,8      ; invalid move , undo the press
         mov from_col,ax
         mov from_row,ax
-        call unmarkAllW
+        call unmarkAllW   ; removes all the highlighted valid cells 
         ret
-    s:   
+    Highlighted:   
     call Change_W_place  ;move  White piece
+
+    ;updating the opponent's drawn valid cells (if exist) after my move
     mov cx,8
     cmp from_col_,cx
     je returnn
@@ -641,14 +648,14 @@ Select_W proc ;Select White piece to move it
     mov from_row,ax
     jmp fin
     CheckEnd:
-    call draw_valids
+    call draw_valids  ;hightlighting the valid cells from that piece
     fin: mov wFound,0
     POP_ALL
     ret
 Select_W endp
 
 
-draw_valids proc
+draw_valids proc  ; switch case for the piece code --> invoking the right function to draw its valid moves
 push_all
 cmp piece_type,22h
     jne sec_knight
@@ -815,31 +822,35 @@ draw_valids endp
 Select_B proc ;Select Black piece to move it
     cmp from_col_,8 ; check if First E
     je skip_ ; Jump if First E
-     call isMarkB ;#######################################
+     call isMarkB ;checks if this a valid cell to move to
         mov cl,1h
-        cmp marked,cl
-        je sOs
-        mov ax,8
+        cmp marked,cl 
+        je Select_B_highlighted
+        mov ax,8 ; invalid move -> undo the q press 
         mov from_col_,ax
         mov from_row_,ax
-        call unmarkAllB
+        call unmarkAllB ; undo the highlight for valid cells
         ret
-    sOs:   
-    call Change_B_place   ;move  Black piece
-     mov cx,8
-    cmp from_col,cx
-    je dummy
-    jmp nodummy
-    dummy: jmp returnn
-    nodummy: mov al,piece_type
-    push AX
-    mov dl,Wpiece_type
-    mov piece_type,dl
-    call unmarkAllW
-    call draw_valids
-    pop ax
-    mov piece_type,al
-    ret
+
+    ;updating the opponent's drawn valid cells (if exist) after my move
+    Select_B_highlighted:   
+        call Change_B_place   ;move  Black piece
+
+        mov cx,8
+        cmp from_col,cx
+        je dummy
+        jmp nodummy
+        dummy: jmp returnn
+        nodummy: mov al,piece_type
+        push AX
+        mov dl,Wpiece_type
+        mov piece_type,dl
+        call unmarkAllW
+        call draw_valids
+        pop ax
+        mov piece_type,al
+        ret
+
     skip_:  ; if you click first Q
     PUSH_ALL
     ;Get First E  coordinates
@@ -876,7 +887,7 @@ Select_B proc ;Select Black piece to move it
     mov from_row_,ax
     jmp ffx
     CheckEnd_:
-    call draw_valids 
+    call draw_valids  ;hightlighting the valid cells from that piece
     ffx:
     mov bFound,0
     POP_ALL
@@ -1113,7 +1124,7 @@ Change_B_place endp
 ; Helper functions for validating cells
 
 
-isMarkW proc
+isMarkW proc ;checks if a cell highlighted valid for white piece (used to validate the move)
 push_all
 mov ax,s1_row
 mov bx,s1_col
@@ -1130,7 +1141,7 @@ yess: mov al,1
 mov marked,al
 jmp ex
 npe:
-mov cl,11h
+mov cl,11h  ; checks if there is overlapping between valid cells highlighted 
 cmp [si],cl
 je yess
 mov al,0 
@@ -1141,7 +1152,7 @@ ex: pop_all
 ret
 isMarkW endp
 ;-------------------------------
-isMarkB proc
+isMarkB proc  ;checks if a cell highlighted valid for black piece (used to validate the move)
 push_all
 mov ax,s2_row
 mov bx,s2_col
@@ -1153,18 +1164,18 @@ mov si,offset selectorMap
 mov cl,01h
 add si,bx
 cmp [si],cl
-jne npe44
+jne isMarkB_npe
 yea: mov al,1
 mov marked,al
-jmp ex44
-npe44:
-mov cl,11h
+jmp isMarkB_ex
+isMarkB_npe:
+mov cl,11h    ; checks if there is overlapping between valid cells highlighted 
 cmp [si],cl 
 je yea
 mov al,0 
 mov marked,al
 
-ex44: pop_all
+isMarkB_ex: pop_all
 
 ret
 isMarkB endp
@@ -1183,7 +1194,7 @@ mov bl,al
 mov cl,01h
 cmp [si+bx],cl
 jne singleMark
-mov cl,11h
+mov cl,11h        ; checks if there is already highlighting for the opponent's piece
 mov [si+bx],cl
 jmp outtt
 singleMark: mov cl,10h
@@ -1206,7 +1217,7 @@ mov bl,al
 mov cl,10h
 cmp [si+bx],cl
 jne singleMark1
-mov cl,11h
+mov cl,11h          ; checks if there is already highlighting for the opponent's piece
 mov [si+bx],cl
 jmp outtt2
 singleMark1:
@@ -1244,7 +1255,7 @@ mov s2_col,dx
 call deselect_valid2
 jmp conti
 overlp:
-mov bl,11h
+mov bl,11h    ;checking if thereis overlapping , if so, -> draw the other highlight
 cmp [si],bl
 jne conti
 mov bl,01h
@@ -1256,16 +1267,16 @@ mov valid_col,dl
 mov valid_row,al
 call draw_black_valid
 conti:
-cmp dx,7
+cmp dx,7        ; continue the loop and checks if the row is checks --> go to the next row
 jne nowrap
 mov dx,0
 inc ax
-jmp cn
+jmp unmarkAllW_con
 nowrap:
 not s2_color
 inc dx
 
-cn: inc si
+unmarkAllW_con: inc si
 dec cx
 jnz init
 
@@ -1307,7 +1318,7 @@ mov s1_col,dx
 call deselect_valid1
 jmp conti2
 overlp2:
-mov bl,11h
+mov bl,11h        ;checking if thereis overlapping , if so, -> draw the other highlight
 cmp [si],bl
 jne conti2
 mov bl,10h
@@ -1320,7 +1331,7 @@ mov valid_row,al
 call draw_white_valid
 conti2:
 cmp dx,7
-jne nowrap2
+jne nowrap2         ; continue the loop and checks if the row is checks --> go to the next row
 mov dx,0
 inc ax
 jmp cn2
@@ -1359,8 +1370,8 @@ mov bh,0
 mov dh,0
 mov from_col,bx
 mov from_row,dx
-call check_W_piece
-cmp wFound,1
+call check_W_piece  ; checks and update piece_type if exists
+cmp wFound,1    ; piece found
 jne nope
 mov valid,0
 jmp cnn
@@ -1395,13 +1406,13 @@ mov bh,0
 mov dh,0
 mov from_col_,bx
 mov from_row_,dx
-call check_B_piece
-cmp bFound,1
+call check_B_piece       ; checks and update piece_type if exists
+cmp bFound,1      ; piece found
 jne nope22
 mov valid,0
-jmp cnn22
+jmp conn2
 nope22: mov valid,1
-cnn22: pop ax
+conn2: pop ax
 mov from_row_,ax
 pop ax
 mov from_col_,ax
@@ -1415,7 +1426,7 @@ pop_all
 ret
 is_B_here endp
 
-isStarhere proc
+isStarhere proc    ; checks if there is power up in a cell
 push_all
 mov si, offset boardMap
 mov ax,dx
@@ -1433,6 +1444,8 @@ mov valid,0
 getout:pop_all
 ret
 isStarhere endp
+
+
 isIn proc ; checks if a cell is within board boundaries
 cmp bl,7
 jg no
@@ -1451,7 +1464,7 @@ ret
 isIn endp
 
 ;------------------------------------------------------------------------------------------------------
-knight_draw_valid proc 
+knight_draw_valid proc   ; loops on the knight_offset array and validate each move, if valid--> draw highlighting to the cell
 push_all
 mov cx,8d
 mov di, offset knightOffset
@@ -1466,7 +1479,7 @@ add di,2
 call isIn
 cmp valid,1
 jne not_valid
-call is_W_here
+call is_W_here      ; checks if there is a piece of the same type , if not continue, if there is do not draw highlight
 cmp valid,1
 jne not_valid
 mov valid_col,bl
@@ -1476,14 +1489,11 @@ call markthisCellW
 not_valid:
 dec cx
 jnz cont
-
-
 pop_all
 ret
-
 knight_draw_valid endp
 
-Bknight_draw_valid proc 
+Bknight_draw_valid proc        ; loops on the knight_offset array and validate each move, if valid--> draw highlighting to the cell
 push_all
 mov cx,8d
 mov di, offset knightOffset
@@ -1499,7 +1509,7 @@ add di,2
 call isIn
 cmp valid,1
 jne not_valid33
-call is_B_here
+call is_B_here        ; checks if there is a piece of the same type , if not continue, if there is do not draw highlight
 cmp valid,1
 jne not_valid33
 mov valid_col,bl
@@ -1510,7 +1520,6 @@ not_valid33:
  dec cx
 jnz cont33
 
-
 pop_all
 ret
 
@@ -1519,7 +1528,7 @@ Bknight_draw_valid endp
 
 ;------------------------------------------------------------------------------------------------------
 
-pawn_draw_valid proc
+pawn_draw_valid proc   ; it validate the moves of a pawn
 push_all
 mov cx,bFound
 push cx
@@ -1529,10 +1538,10 @@ mov bx,from_col
 mov ax,from_row
 dec ax
 mov dx,ax
-call isIn
+call isIn  ; checks if it is inside the boundaries of the board
 cmp valid,1
-jne dummyl ; check if there is a piece direct in front of it / !! there is validation here not done
-jmp dummyfree
+jne dummyl 
+jmp dummyfree   ; dummy label for making a long jump
 dummyl: jmp outt
 dummyfree: push AX
 push bx
@@ -1544,7 +1553,7 @@ add si,ax
 mov cx,00
 pop bx
 pop ax
-cmp [si],cl
+cmp [si],cl     ; checks if there is no piece in front of the pawn, if there is -> dont continue and move to the diagonals if there is enemy pieces
 je ye1s
 mov cl,0AAh
 cmp [si],cl
@@ -1554,7 +1563,7 @@ mov valid_col,bl
 call draw_white_valid
 call markthisCellW
 mov cx,6
-cmp from_row,cx
+cmp from_row,cx     ; checks if it is the first move for the pawn, he could move two step forward
 jne nxtvald
 sub si,8
 mov cx,00
@@ -1574,7 +1583,7 @@ inc ax
 nxtvald:
 inc bx
 mov dx,ax
-call isIn ;////////////////////////////////////////////////
+call isIn ;checks if the diagonals inside boundaries
 cmp valid,1
 jne noo
 
@@ -1584,7 +1593,7 @@ mov cx, from_row_
 push cx
 mov from_row_,ax
 mov from_col_,bx
-call check_B_piece
+call check_B_piece  ; checks if there is enemy in the diagonals to be eaten, if thereis highlight
 pop cx
 mov from_row_,cx
 pop cx
@@ -1596,7 +1605,7 @@ mov valid_col,bl
 mov valid_row,al
 call draw_white_valid
 call markthisCellW
-noo:
+noo:              ;doing the same checks for the other diagonal
 sub bx,2
 mov dx,ax
 call isIn
@@ -1634,7 +1643,7 @@ pawn_draw_valid endp
 
 ;-------------------------------------------------------------------------------
 
-Bpawn_draw_valid proc
+Bpawn_draw_valid proc      ; it validate the moves of a pawn
 push_all
 mov cx,wFound
 push cx
@@ -1642,14 +1651,15 @@ mov cx,wPiece
 push cx
 mov bx,from_col_
 mov ax,from_row_
-inc ax ; check if there is a piece direct in front of it / !! there is validation here not done
+inc ax ; check if there is a piece direct in front of it 
 mov dx,ax
 call isIn
 cmp valid,1
 jne dummy_
 jmp dummyfree_
-dummy_: jmp outt5
-dummyfree_: push AX
+dummy_: jmp outt5     ; dummy label for making a long jump
+dummyfree_: 
+push AX
 push bx
 mov dx,8d
 mul dl
@@ -1659,9 +1669,9 @@ add si,ax
 mov cx,00
 pop bx
 pop ax
-cmp [si],cl
+cmp [si],cl      ; checks if there is no piece in front of the pawn, if there is -> dont continue and move to the diagonals if there is enemy pieces
 je ye3s
-mov cl,0AAh
+mov cl,0AAh       ; checks if there is power up to highlight it also
 cmp [si],cl
 jne nxtvald5
 ye3s:
@@ -1669,14 +1679,14 @@ mov valid_row,al
 mov valid_col,bl
 call draw_black_valid
 call markthisCellB
-mov cx,1
+mov cx,1      ; checks if it is the first move for the pawn, he could move two step forward
 cmp from_row_,cx
 jne nxtvald5
 add si,8
-mov cx,00
+mov cx,00       
 cmp [si],cl
 je ye4s
-mov cl,0AAh
+mov cl,0AAh       ; checks if there is power up to highlight it also
 cmp [si],cl
 jne nxtvald5
 ye4s:
@@ -1690,7 +1700,7 @@ dec ax
 nxtvald5:
 inc bx
 mov dx,ax
-call isIn ;////////////////////////////////////////////////
+call isIn ;;checks if the diagonals inside boundaries
 cmp valid,1
 jne noo5
 mov cx,from_col
@@ -1699,7 +1709,7 @@ mov cx, from_row
 push cx
 mov from_row,ax
 mov from_col,bx
-call check_W_piece
+call check_W_piece      ; checks if there is enemy in the diagonals to be eaten, if thereis highlight
 pop cx
 mov from_row,cx
 pop cx
@@ -1711,10 +1721,10 @@ mov valid_col,bl
 mov valid_row,al
 call draw_black_valid
 call markthisCellB
-noo5:
+noo5:        ;doing the same checks for the other diagonal
 sub bx,2
 mov dx,ax
-call isIn
+call isIn     
 cmp valid,1
 jne outt5
 mov cx,from_col
@@ -1723,7 +1733,7 @@ mov cx, from_row
 push cx
 mov from_row,ax
 mov from_col,bx
-call check_W_piece
+call check_W_piece      ; checks if there is enemy in the diagonals to be eaten, if thereis highlight
 pop cx
 
 mov from_row,cx
@@ -1749,21 +1759,21 @@ Bpawn_draw_valid endp
 
 ;--------------------------------------------------------------------------------------------------------------------------
 
-draw_continous_valid proc
+draw_continous_valid proc ;loops over the offsets of (bishop & rook ) depth first untill it reaches dead end, and validate each cell to draw the highlight
 push_all
 mov bx, from_col
 mov ax,from_row
 mov di,offset boardMap
 mov cl,4
-loopOnAllDirection1:
-eachDirection1:
+loopOnAllDirection1: ; loop on each offset
+eachDirection1:  ; loops again and again  with same offset untill it reaches dead end 
 add al,[si+1]
 add bl,[si]
 mov dx,ax
-call isIn
+call isIn     ; checking for the boundaries
 cmp valid,1
 je oka1
-jmp anotherDirec1
+jmp anotherDirec1 ; try another offset
 oka1: 
 push ax
 push di
@@ -1772,11 +1782,11 @@ mul dl
 add ax,bx
 add di,ax
 mov ch,00
-cmp [di],ch
+cmp [di],ch  ; if the cell is empty
 je ye5s
-mov ch,0AAh
+mov ch,0AAh  ; checks if there is power up
 cmp [di],ch
-jne piecefound1
+jne piecefound1 ; if there is piece
 ye5s:
 pop di
 pop ax
@@ -1785,7 +1795,7 @@ mov valid_col,bl
 call draw_white_valid
 call markthisCellW
 jmp eachDirection1
-piecefound1:
+piecefound1: ;checks if it is enemy or of the same type
 pop di
 pop ax
 mov dx,ax
@@ -1812,21 +1822,22 @@ draw_continous_valid endp
 
 ;----------------------------------------------------------------------------------------------
 
-Bdraw_continous_valid proc
+Bdraw_continous_valid proc      ;loops over the offsets of (bishop & rook ) depth first untill it reaches dead end, and validate each cell to draw the highlight
 push_all
 mov bx, from_col_
 mov ax,from_row_
 mov di,offset boardMap
 mov cl,4
-loopOnAllDirection19:
-eachDirection19:
+loopOnAllDirection19: ; loop on each offset
+eachDirection19:    ; loops again and again  with same offset untill it reaches dead end 
+
 add al,[si+1]
 add bl,[si]
 mov dx,ax
-call isIn
+call isIn     ; checking for the boundaries
 cmp valid,1
 je oka19
-jmp anotherDirec19
+jmp anotherDirec19  ; try another offset
 oka19: 
 push ax
 push di
@@ -1835,10 +1846,10 @@ mul dl
 add ax,bx
 add di,ax
 mov ch,00
-cmp [di],ch
+cmp [di],ch    ; if the cell is empty
 je ye6s
 mov ch,0AAh
-cmp [di],ch
+cmp [di],ch    ; checks if there is power up
 jne piecefound19
 ye6s:
 pop di
@@ -1848,11 +1859,11 @@ mov valid_col,bl
 call draw_black_valid
 call markthisCellB
 jmp eachDirection19
-piecefound19:
+piecefound19:   ; if there is piece
 pop di
 pop ax
 mov dx,ax
-call is_B_here
+call is_B_here    ;checks if it is enemy or of the same type
 mov dl,1
 cmp valid,dl
 jne anotherDirec19
@@ -1875,7 +1886,7 @@ Bdraw_continous_valid endp
 
 ;--------------------------------------------------------------------------------------------------------------------------
 
-queen_draw_valid proc
+queen_draw_valid proc ; queen = rook + bishop
 push_all
   mov si, offset bishopOffset
 call draw_continous_valid
@@ -1886,7 +1897,7 @@ ret
 queen_draw_valid endp
 
 ;-------------------------------------------------------------------------------------------------------------------
-Bqueen_draw_valid proc
+Bqueen_draw_valid proc  ; queen = rook + bishop
 push_all
   mov si, offset bishopOffset
 call Bdraw_continous_valid
@@ -1898,7 +1909,7 @@ Bqueen_draw_valid endp
 
 ;--------------------------------------------------------------------------------------------------------------------------
 
-king_draw_valid proc
+king_draw_valid proc ;it validates the moves of the king (the 8 directions around it)
 push_all
 mov cx,8d
 mov di, offset kingOffset
