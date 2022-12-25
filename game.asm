@@ -23,6 +23,9 @@ extrn show_player_name:far
 extrn draw_white_valid:far
 extrn draw_black_valid:far
 extrn Timer:far
+extrn PrintBlackKilled:far
+extrn PrintWhiteKilled:far
+
 
 extrn white_deselector:byte
 extrn black_deselector:byte
@@ -44,6 +47,10 @@ extrn bSquare:byte
 extrn wSquare:byte
 extrn selector1:byte
 extrn selector2:byte
+extrn KilledBlack:byte
+extrn KilledWhite:byte
+
+
 
 extrn shape_to_draw:word
 extrn row:word
@@ -106,7 +113,7 @@ marked db 0
 EndGame db 0   ; if EndGame==0A --> white win
 
 WFT db 3  ; White Freezing Time
-BFT db 5 ; Black Freezing Time
+BFT db 3 ; Black Freezing Time
 
 
 W_threat_MSG db "White checked$"
@@ -1048,13 +1055,19 @@ push ax
       mov al,[bx]
       cmp al,0AAh
       Jne no_PowerUp
-      mov WFT,01H
+      sub WFT,01H
       no_PowerUp:
       cmp al,0Ah
       Jne notEndGame
       mov EndGame,0Ah
       call PrintWinner
       notEndGame:
+      ;------------check if you eat black peice
+      cmp al,00h
+      je no_Black_eat
+      mov KilledBlack,al
+      call PrintBlackKilled
+      no_Black_eat:
     pop cx
     ;----------------
     ; get source cell color if row + col==odd --> cell is black
@@ -1079,6 +1092,7 @@ push ax
     b___cell:
     call draw_B_to_cell
     coon:
+
     mov ax,to_col
     mov s1_col,ax
     mov ax,to_row
@@ -1152,7 +1166,7 @@ call unmarkAllB
     mov to_color_,ax
         ;---------Bonus
     push cx
-       ; get index of destination cell in array to freeze it after moving 
+      ; get index of destination cell in array to freeze it after moving 
       lea bx,boardMap
       mov ax,to_row_
       mov cl,8
@@ -1162,13 +1176,20 @@ call unmarkAllB
       mov al,[bx]
       cmp al,0AAh
       Jne no_PowerUp_
-      mov BFT,01H
+      sub BFT,01H
       no_PowerUp_:
+      ;-------------Check if King Killed
       cmp al,1Ah
       Jne notEndGame_
       mov EndGame,1Ah
       call PrintWinner
       notEndGame_:
+      ;------------check if you eat black peice
+      cmp al,00h
+      je no_White_eat
+      mov KilledWhite,al
+      call PrintWhiteKilled
+      no_White_eat:
     pop cx
     ;----------------
         ; get source cell color if row + col==odd --> cell is black

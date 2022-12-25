@@ -50,7 +50,7 @@ extrn wPiece:word
 extrn bPiece:word
 
 public draw_cell, get_cell_start,draw_valid_cell,draw_white_valid,draw_black_valid ,draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell
-public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,PrintWinner,reset_timer
+public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,PrintWinner,reset_timer,PrintBlackKilled,KilledBlack,KilledWhite,PrintWhiteKilled
 public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece,move_piece_,draw_W_from_cell_,draw_B_from_cell_,draw_W_to_cell_,draw_B_to_cell_
 
 .model small
@@ -60,6 +60,8 @@ col dw 0
 row dw 0
 cell_start dw 0
 shape_to_draw dw 0
+KilledWhite db 0
+KilledBlack db 0
 ;---------------Timer Data------------------
 seconds1 db -1
 seconds2 db 0
@@ -69,35 +71,155 @@ Last db 0
 ;----------Status Bar Data-----------------------
      White_win db "White Wins$"
      Black_win db "Black Wins$"
-     BPwenDie db "Black Pwan Die$"
-     WPwenDie db "White Pwan Die$"
-     BKnightDie db "Black Knight Die$"
-     WKnightDie db "White Knight Die$"
-     BRooKDie db "Black Rook Die$"
-     WRookDie db "White Rook Die$"
-     BQueenDie db "Black Queen Die$"
-     WQueenDie db "White Queen Die$"
-     BBishopDie db "Black Bishop Die$"
-     WBishopDie db "White Bishop Die$"
+     BPwenDie db "B-Pawn Died$"
+     WPwenDie db "W-Pawn Died$"
+     BKnightDie db "B-Knight Died$"
+     WKnightDie db "W-Knight Died$"
+     BRooKDie db "B-Rook Died$"
+     WRookDie db "W-Rook Died$"
+     BQueenDie db "B-Queen Died$"
+     WQueenDie db "W-Queen Died$"
+     BBishopDie db "B-Bishop Died$"
+     WBishopDie db "W-Bishop Died$"
+     delete__ db "               $"
+
 .code
 
 
 ;-------------------------------------------------------PrintBlackKilled-------------------------------------------------------------------
 PrintBlackKilled proc far
 PUSH_ALL
-;      ; mov cursor
-;      mov ah,2
-;      mov dx,1719h
-;      int 10h 
-;      ;------
-;      ;-------
-;      GoPrint:
-; mov ah, 9
-; mov dx,bx
-; int 21h
+push bx
+     ; mov cursor
+     mov ah,2
+     mov dx,1719h
+     int 10h 
+     
+     ;delete
+     lea bx,delete__
+     mov ah, 9
+     mov dx,bx
+     int 21h
+pop bx
+     ; mov cursor
+     mov ah,2
+     mov dx,1719h
+     int 10h 
+     ;-------
+     mov al,KilledBlack
+     lea bx,BRooKDie
+     cmp al,11h
+     je found_B 
+     cmp al,01h
+     je found_B 
+     lea bx,BKnightDie
+     cmp al,02h
+     je found_B 
+     cmp al,12h
+     je found_B 
+     lea bx,BBishopDie
+     cmp al,13h
+     je found_B 
+     cmp al,03h
+     je found_B
+     lea bx,BPwenDie
+     cmp al,40h
+     je found_B 
+     cmp al,41h
+     je found_B 
+     cmp al,42h
+     je found_B 
+     cmp al,43h
+     je found_B 
+     cmp al,44h
+     je found_B 
+     cmp al,45h
+     je found_B 
+     cmp al,46h
+     je found_B 
+     cmp al,47h
+     je found_B 
+     lea bx,BQueenDie
+     cmp al,0Bh
+     je found_B
+     jmp end_B
+
+     found_B:
+     mov ah, 9
+     mov dx,bx
+     int 21h
+     end_B:
+     ;-------
      POP_ALL
      ret 
 PrintBlackKilled endp
+;-------------------------------------------------------PrintWhiteKilled-------------------------------------------------------------------
+PrintWhiteKilled proc far
+PUSH_ALL
+push bx
+     ; mov cursor
+     mov ah,2
+     mov dx,1719h
+     int 10h 
+     
+     ;delete
+     lea bx,delete__
+     mov ah, 9
+     mov dx,bx
+     int 21h
+pop bx
+     ; mov cursor
+     mov ah,2
+     mov dx,1719h
+     int 10h 
+     ;-------
+     mov al,KilledWhite
+     lea bx,WRooKDie
+     cmp al,21h
+     je found_W 
+     cmp al,31h
+     je found_W 
+     lea bx,WKnightDie
+     cmp al,22h
+     je found_W 
+     cmp al,32h
+     je found_W 
+     lea bx,WBishopDie
+     cmp al,23h
+     je found_W 
+     cmp al,33h
+     je found_W
+     lea bx,WPwenDie
+     cmp al,50h
+     je found_W 
+     cmp al,51h
+     je found_W 
+     cmp al,52h
+     je found_W 
+     cmp al,53h
+     je found_W 
+     cmp al,55h
+     je found_W 
+     cmp al,55h
+     je found_W 
+     cmp al,56h
+     je found_W 
+     cmp al,57h
+     je found_W 
+     lea bx,WQueenDie
+     cmp al,1Bh
+     je found_W
+     jmp end_W
+
+     found_W:
+     mov ah, 9
+     mov dx,bx
+     int 21h
+     end_W:
+     ;-------
+     POP_ALL
+     ret 
+PrintWhiteKilled endp
 ;-------------------------------------------------------PrintWinner-------------------------------------------------------------------
 reset_timer proc far
      mov seconds1, -1
@@ -426,7 +548,6 @@ check_W_piece proc far
      jmp not_found
 
      not_found:
-          ;;mov shape_to_draw,offset bBishop
           mov wFound,00h
           jmp ee
      found:
