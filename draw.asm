@@ -67,11 +67,36 @@ min1 db 0
 min2 db 0
 Last db 0
 ;----------Status Bar Data-----------------------
-  White_win db "White Wins$"
-  Black_win db "Black Wins$"
-
+     White_win db "White Wins$"
+     Black_win db "Black Wins$"
+     BPwenDie db "Black Pwan Die$"
+     WPwenDie db "White Pwan Die$"
+     BKnightDie db "Black Knight Die$"
+     WKnightDie db "White Knight Die$"
+     BRooKDie db "Black Rook Die$"
+     WRookDie db "White Rook Die$"
+     BQueenDie db "Black Queen Die$"
+     WQueenDie db "White Queen Die$"
+     BBishopDie db "Black Bishop Die$"
+     WBishopDie db "White Bishop Die$"
 .code
-;-------------------------------------------------------Timer-------------------------------------------------------------------
+;-------------------------------------------------------PrintBlackKilled-------------------------------------------------------------------
+PrintBlackKilled proc far
+PUSH_ALL
+     ; mov cursor
+     mov ah,2
+     mov dx,1719h
+     int 10h 
+     ;------
+     ;-------
+     GoPrint:
+mov ah, 9
+mov dx,bx
+int 21h
+     POP_ALL
+     ret 
+PrintBlackKilled endp
+;-------------------------------------------------------PrintWinner-------------------------------------------------------------------
 PrintWinner proc far
 PUSH_ALL
      ; mov cursor
