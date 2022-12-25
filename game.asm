@@ -67,6 +67,14 @@ from_row dw 8
 from_col dw 8
 valid_row db 8  ; row of the valid cell to be drawn
 valid_col db 8  ; column of the valid cell to be drawn
+Wking_row db 7 
+Wking_col db  4
+Bking_row db 0 
+Bking_col db  4
+W_threat db 0
+B_threat db 0
+W_threat_p db 00
+B_threat_p db 00
 from_color dw 0 
 to_row dw 0
 to_col dw 0
@@ -99,6 +107,11 @@ EndGame db 0   ; if EndGame==0A --> white win
 
 WFT db 3  ; White Freezing Time
 BFT db 5 ; Black Freezing Time
+
+
+W_threat_MSG db "White checked$"
+B_threat_MSG db "Black checked$"
+clean_threat db "             $"
 
 init_boardMap label byte  ;used for resetting the game
         db 01h, 02h, 03h, 0Bh, 0Ah, 13h, 12h, 11h
@@ -672,10 +685,28 @@ Select_W proc ;Select White piece to move it
         call unmarkAllW   ; removes all the highlighted valid cells 
         ret
     Highlighted:   
+   ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset clean_threat
+    int 21h
     call Change_W_place  ;move  White piece
-
+    call check_wking_threat
+    mov cl,1
+    cmp W_threat,1
+    jne nothreat
+       ;mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset W_threat_MSG
+    int 21h
+    mov W_threat,0
     ;updating the opponent's drawn valid cells (if exist) after my move
-    mov cx,8
+    nothreat: mov cx,8
     cmp from_col_,cx
     je returnn
     mov al,piece_type
@@ -906,9 +937,28 @@ Select_B proc ;Select Black piece to move it
         ret
 
     ;updating the opponent's drawn valid cells (if exist) after my move
-    Select_B_highlighted:   
+    Select_B_highlighted:  
+      mov ah,2
+       mov dx,1819h
+       int 10h 
+       mov ah, 9
+      mov dx,offset clean_threat
+       int 21h
         call Change_B_place   ;move  Black piece
-
+        call check_wking_threat
+    mov cl,1
+    cmp W_threat,1
+    jne nothreat_
+        ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset W_threat_MSG
+    int 21h
+    mov W_threat,0
+    ;updating the opponent's drawn valid cells (if exist) after my move
+    nothreat_:
         mov cx,8
         cmp from_col,cx
         je dummy
@@ -971,8 +1021,15 @@ Select_B endp
 Change_W_place proc 
 push ax
  call unmarkAllW 
+ mov cl,1Ah
+ cmp Wpiece_type,cl
+ jne notKing
+ mov ax,s1_col
+ mov Wking_col,Al
+  mov ax,row
+ mov Bking_row,Al
  ;Get the destination cell you want to move the piece to
-    mov ax,s1_col
+   notKing: mov ax,s1_col
     mov to_col,ax
     mov ax,s1_row
     mov to_row,ax
@@ -1518,6 +1575,95 @@ getout:pop_all
 ret
 isStarhere endp
 
+
+is_Bbishop proc 
+push_all
+mov valid,0
+cmp piece_type,03h
+jne secBlackBishop
+mov valid,1
+jmp exitbishop
+secBlackBishop:
+cmp piece_type,13h
+jne exitbishop
+mov valid,1
+jmp exitbishop
+exitbishop:
+pop_all
+ret
+is_Bbishop endp
+
+is_Brook proc 
+push_all
+mov valid,0
+cmp piece_type,01h
+jne secBlackrook
+mov valid,1
+jmp exitrook
+secBlackrook:
+cmp piece_type,11h
+jne exitrook
+mov valid,1
+jmp exitrook
+exitrook:
+pop_all
+ret
+is_Brook endp
+
+is_Bknight proc 
+push_all
+mov valid,0
+cmp piece_type,02h
+jne secBlackknight
+mov valid,1
+jmp exitknight
+secBlackknight:
+cmp piece_type,12h
+jne exitknight
+mov valid,1
+exitknight:
+pop_all
+ret
+is_Bknight endp
+
+is_Bking proc 
+push_all
+mov valid,0
+cmp piece_type,0Ah
+jne nobking
+mov valid,1
+nobking:
+pop_all
+ret
+is_Bking endp
+
+is_Bqueen proc
+push_all
+mov valid,0
+cmp piece_type,0Bh
+jne nobqueen
+mov valid,1
+nobqueen:
+pop_all
+ret
+is_Bqueen endp
+
+is_Bpawn proc 
+push_all
+mov ah,0
+mov al,piece_type
+mov dl,10h
+div dl
+cmp al,4
+jne notPawn
+mov valid,1
+jmp exitF
+notPawn:
+mov valid,0
+exitF:
+pop_all
+ret
+is_Bpawn endp
 
 isIn proc ; checks if a cell is within board boundaries
 cmp bl,7
@@ -2147,8 +2293,206 @@ POP_ALL
      ret 
 PowerUp endp
 ;-----------------------------------------------------------------------------------------------------------------------------------------
+check_wking_threat proc  ; used to validate if there is a check for the white king
+push_all
+; first validate pawn check
+mov dl,Wking_row
+mov bl,Wking_col
+mov bh,0
+mov dh,0
+dec dl
+inc bl
+call isIn
+cmp valid,1
+jne nxt_dia_check
+call is_B_here
+cmp valid,0
+jne nxt_dia_check
+call is_Bpawn
+cmp valid,1
+jne nxt_dia_check
+mov cl,1
+mov W_threat,cl
+jmp threat_exit
+;validate the other diagonal
+nxt_dia_check:
+sub bl,2
+call isIn
+cmp valid,1
+jne nxt_type_vald
+call is_B_here
+cmp valid,0
+jne nxt_type_vald
+call is_Bpawn
+cmp valid,1
+jne nxt_type_vald
+mov cl,1
+mov W_threat,cl
+jmp threat_exit
+nxt_type_vald:
+mov bx,1
+push bx
+;validate if bishop check king
+mov si,offset bishopOffset
+mov bl,Wking_col
+mov al,Wking_row
+mov bh,0
+mov ah,0
+mov di,offset boardMap
+mov cl,4
+threat_loopOnAllDirection1: ; loop on each offset
+threat_eachDirection1:  ; loops again and again  with same offset untill it reaches dead end 
+add al,[si+1]
+add bl,[si]
+mov dx,ax
+call isIn     ; checking for the boundaries
+cmp valid,1
+je threat_oka1
+jmp threat_anotherDirec1 ; try another offset
+threat_oka1: 
+push ax
+push di
+mov dx,8
+mul dl
+add ax,bx
+add di,ax
+mov ch,00
+cmp [di],ch  ; if the cell is empty
+je threat_ye5s
+mov ch,0AAh  ; checks if there is power up
+cmp [di],ch
+jne threat_piecefound1 ; if there is piece
+threat_ye5s:
+pop di
+pop ax
+jmp threat_eachDirection1
+threat_piecefound1: ;checks if it is enemy or of the same type
+pop di
+pop ax
+mov dx,ax
+call is_B_here
+mov dl,0
+cmp valid,dl
+jne threat_anotherDirec1
+pop bx
+cmp bx,1
+jne check_if_Rook
+call is_Bbishop
+jmp continue_Usual
+check_if_Rook:
+call is_Brook
+continue_Usual:
+push bx
+cmp valid,1
+jne checkbqueen
+mov dl,1
+mov W_threat,dl
+pop bx
+jmp threat_exit
+checkbqueen:
+call is_Bqueen
+cmp valid,1
+jne nxtnxtVald
+mov dl,1
+mov W_threat,dl
+pop bx
+jmp threat_exit
+threat_anotherDirec1:
+add si,2
+mov bl,Wking_col
+mov al,Wking_row
+mov ah,0
+mov bh,0
+dec cl
+jnz threat_x12
+jmp nxtnxtVald
+threat_x12:jmp threat_loopOnAllDirection1
+nxtnxtVald:
+pop bx
+cmp bx,1
+jne nxtkingvald
+dec bx
+push bx
+; validate if rook check king
+mov si,offset rookOffset
+mov bl,Wking_col
+mov al,Wking_row
+mov bh,0
+mov ah,0
+mov di,offset boardMap
+mov cl,4
+jmp threat_loopOnAllDirection1
+;////////////////////////////////////////////////////////////////////////////////
+nxtkingvald:
+;validate if king check king
+mov cx,8d
+mov di, offset kingOffset
+
+threat_cont1: 
+mov bl,Wking_col
+mov dl,Wking_row
+mov bh,0
+mov dh,0
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne threat_not_valid1
+
+call is_B_here
+
+cmp valid,0
+jne threat_not_valid1
+call is_Bking
+cmp valid,1
+jne threat_not_valid1
+mov dl,1
+mov W_threat,dl
+jmp threat_exit
+threat_not_valid1:
+dec cx
+jnz threat_cont1
 
 
+;validate if knight check king
+
+mov cx,8d
+mov di, offset knightOffset
+threat_cont: 
+mov bl,Wking_col
+mov dl,Wking_row
+mov bh,0
+mov dh,0
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne threat_not_valid
+call is_B_here      ; checks if there is a piece of the same type , if not continue, if there is do not draw highlight
+cmp valid,0
+jne threat_not_valid
+call is_Bknight
+cmp valid,1
+jne threat_not_valid
+mov dl,1
+mov W_threat,dl
+jmp threat_exit
+threat_not_valid:
+dec cx
+jnz threat_cont
+
+threat_exit:
+pop_all
+ret
+check_wking_threat endp
+
+;-----------------------------------------------------------------------------------------------------------------------------------------
 play proc far
     call init_draw
     call PowerUp

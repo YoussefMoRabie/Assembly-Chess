@@ -85,16 +85,16 @@ Last db 0
 ;-------------------------------------------------------PrintBlackKilled-------------------------------------------------------------------
 PrintBlackKilled proc far
 PUSH_ALL
-     ; mov cursor
-     mov ah,2
-     mov dx,1719h
-     int 10h 
-     ;------
-     ;-------
-     GoPrint:
-mov ah, 9
-mov dx,bx
-int 21h
+;      ; mov cursor
+;      mov ah,2
+;      mov dx,1719h
+;      int 10h 
+;      ;------
+;      ;-------
+;      GoPrint:
+; mov ah, 9
+; mov dx,bx
+; int 21h
      POP_ALL
      ret 
 PrintBlackKilled endp
