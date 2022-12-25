@@ -1,6 +1,9 @@
 include macros.inc
 extrn play:far
 extrn init_draw:far
+extrn reset_game:far
+extrn reset_timer:far
+extrn inline_clear:far
 extrn player_mode:byte
 
 public player_name
@@ -25,6 +28,13 @@ message4 db "To Exit The Program Press ESC$"
 error_message db "Name lenght must not exceed 13 and begin with a character! $"
 
 .code
+
+reset_all proc
+    call reset_game
+    call reset_timer
+    call inline_clear
+    ret
+reset_all endp
 
 Show_Message proc far
     PUSH_ALL
@@ -199,6 +209,7 @@ wait_key proc
     jmp no_key_pressed_menu
 
     Game:
+    call reset_all
     mov player_mode,0
     call play
     call menu

@@ -50,7 +50,7 @@ extrn wPiece:word
 extrn bPiece:word
 
 public draw_cell, get_cell_start,draw_valid_cell,draw_white_valid,draw_black_valid ,draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell
-public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,PrintWinner
+public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,PrintWinner,reset_timer
 public row, col, cell_start, shape_to_draw,check_W_piece,check_B_piece,move_piece_,draw_W_from_cell_,draw_B_from_cell_,draw_W_to_cell_,draw_B_to_cell_
 
 .model small
@@ -80,6 +80,8 @@ Last db 0
      BBishopDie db "Black Bishop Die$"
      WBishopDie db "White Bishop Die$"
 .code
+
+
 ;-------------------------------------------------------PrintBlackKilled-------------------------------------------------------------------
 PrintBlackKilled proc far
 PUSH_ALL
@@ -97,6 +99,16 @@ int 21h
      ret 
 PrintBlackKilled endp
 ;-------------------------------------------------------PrintWinner-------------------------------------------------------------------
+reset_timer proc far
+     mov seconds1, -1
+     mov seconds2, 0
+     mov min1, 0
+     mov min2, 0 
+     mov Last, 0
+     ret
+reset_timer endp
+
+
 PrintWinner proc far
 PUSH_ALL
      ; mov cursor
@@ -274,7 +286,7 @@ draw_selector2 proc far
     ret
 draw_selector2 endp
 
-draw_valid_cell proc 
+draw_valid_cell proc  ; draw the highlight for valid cells
     push ax
     mov al,valid_col
     mov ah,00
@@ -286,7 +298,7 @@ draw_valid_cell proc
     ret
 draw_valid_cell endp
 ;--------------------------------
-draw_black_valid proc far
+draw_black_valid proc far ;draw highlight for white 
 push_all
     mov shape_to_draw,offset valid2
      call draw_valid_cell
@@ -294,7 +306,7 @@ push_all
      ret
 draw_black_valid endp
 ;--------------------------------
-draw_white_valid proc far
+draw_white_valid proc far ;draw highlight for white 
 push_all
     mov shape_to_draw,offset valid1
           call draw_valid_cell
