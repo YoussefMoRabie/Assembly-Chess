@@ -100,8 +100,6 @@ from_color_ dw 0
 to_row_ dw 0
 to_col_ dw 0
 to_color_ dw 0 
-Mahmoud db 4
-cursor_dummy db 4
 ;-----------------------------------------------------------------------------
 player_chat db 0
 s1_row dw 7
@@ -182,10 +180,10 @@ kingOffset label byte ; valid offsets for king moves
             db 0,1
 
 bishopOffset label byte ; valid offsets for bishop moves
-           db -1,-1
            db -1,1
             db 1,1
             db 1,-1
+            db -1,-1
             
 
 RookOffset label byte   ; valid offsets for rook moves
@@ -260,8 +258,8 @@ reset_game proc far
   mov valid, 1 
   mov marked, 0 
   mov EndGame, 0 
-  mov WFT, 0  
-  mov BFT, 0
+  mov WFT, 3  
+  mov BFT, 3
 
   mov ax,@data
   mov es,ax
@@ -1041,15 +1039,14 @@ Select_B endp
 ;--------------------------------
 Change_W_place proc 
 push ax
-  call unmarkAllW 
-mov cl,1Ah
+ call unmarkAllW 
+ mov cl,1Ah
  cmp Wpiece_type,cl
  jne notKing
  mov ax,s1_col
  mov Wking_col,Al
   mov ax,s1_row
  mov Wking_row,Al
-
  ;Get the destination cell you want to move the piece to
    notKing: mov ax,s1_col
     mov to_col,ax
@@ -1702,7 +1699,6 @@ ret
 is_Bpawn endp
 
 isIn proc ; checks if a cell is within board boundaries
-push_all
 cmp bl,7
 jg no
 cmp bl,0
@@ -1716,7 +1712,6 @@ jmp exit
 no:
 mov valid,0
 exit:
-pop_all
 ret
 isIn endp
 
@@ -2334,68 +2329,55 @@ PowerUp endp
 check_wking_threat proc  ; used to validate if there is a check for the white king
 push_all
 ; first validate pawn check
-; mov dl,Wking_row
-; mov bl,Wking_col
-; mov bh,0
-; mov dh,0
-; dec dl
-; inc bl
-; call isIn
-; cmp valid,1
-; jne nxt_dia_check
-; call is_B_here
-; cmp valid,0
-; jne nxt_dia_check
-; call is_Bpawn
-; cmp valid,1
-; jne nxt_dia_check
-; mov cl,1
-; mov W_threat,cl
-; jmp threat_exit
-; ;validate the other diagonal
-; nxt_dia_check:
-; sub bl,2
-; call isIn
-; cmp valid,1
-; jne nxt_type_vald
-; call is_B_here
-; cmp valid,0
-; jne nxt_type_vald
-; call is_Bpawn
-; cmp valid,1
-; jne nxt_type_vald
-; mov cl,1
-; mov W_threat,cl
-; jmp threat_exit
-; nxt_type_vald:
-; mov ah,2
-;   mov dx,041eh
-;   int 10h 
-; mov ah,2
-;      mov dl,Wking_col
-;      add dl,'0'
-;      int 21h
-; mov ah,2
-;      mov dl,Wking_row
-;      add dl,'0'
-;      int 21h
-;validate if bishop check king
+mov dl,Wking_row
+mov bl,Wking_col
+mov bh,0
+mov dh,0
+dec dl
+inc bl
+call isIn
+cmp valid,1
+jne nxt_dia_check
+call is_B_here
+cmp valid,0
+jne nxt_dia_check
+call is_Bpawn
+cmp valid,1
+jne nxt_dia_check
+mov cl,1
+mov W_threat,cl
+jmp threat_exit
+;validate the other diagonal
+nxt_dia_check:
+sub bl,2
+call isIn
+cmp valid,1
+jne nxt_type_vald
+call is_B_here
+cmp valid,0
+jne nxt_type_vald
+call is_Bpawn
+cmp valid,1
+jne nxt_type_vald
+mov cl,1
+mov W_threat,cl
+jmp threat_exit
+nxt_type_vald:
 
+
+;validate if bishop check king
 mov si,offset bishopOffset
 mov bl,Wking_col
 mov al,Wking_row
 mov bh,0
 mov ah,0
 mov di,offset boardMap
-
-
+mov cl,4
 threat_loopOnAllDirection1: ; loop on each offset
 threat_eachDirection1:  ; loops again and again  with same offset untill it reaches dead end 
-
 add al,[si+1]
 add bl,[si]
 mov dx,ax
-mov dh,0
 call isIn     ; checking for the boundaries
 cmp valid,1
 je threat_oka1
@@ -2425,7 +2407,13 @@ call is_B_here
 mov dl,0
 cmp valid,dl
 jne threat_anotherDirec1
+cmp bishop_Rook_flag,1
+jne check_if_Rook
 call is_Bbishop
+jmp continue_Usual
+check_if_Rook:
+call is_Brook
+continue_Usual:
 cmp valid,1
 jne checkbqueen
 mov dl,1
@@ -2444,146 +2432,91 @@ mov bl,Wking_col
 mov al,Wking_row
 mov ah,0
 mov bh,0
- dec cl
+dec cl
 jnz threat_x12
 jmp nxtnxtVald
 threat_x12:jmp threat_loopOnAllDirection1
 nxtnxtVald:
+cmp bishop_Rook_flag,1
+jne nxtkingvald
+mov bishop_Rook_flag,0
+mov si,offset rookOffset
+mov bl,Wking_col
+mov al,Wking_row
+mov bh,0
+mov ah,0
+mov di,offset boardMap
+mov cl,4
+jmp threat_loopOnAllDirection1
 
-;//////////////////////////////////////////////////////////////////////////////////
-
-; mov si,offset RookOffset
-; mov bl,Wking_col
-; mov al,Wking_row
-; mov bh,0
-; mov ah,0
-; mov di,offset boardMap
-; mov cl,4
-; rook_threat_loopOnAllDirection1: ; loop on each offset
-; rook_threat_eachDirection1:  ; loops again and again  with same offset untill it reaches dead end 
-; add al,[si+1]
-; add bl,[si]
-; mov dx,ax
-; call isIn     ; checking for the boundaries
-; cmp valid,1
-; je rook_threat_oka1
-; jmp rook_threat_anotherDirec1 ; try another offset
-; rook_threat_oka1: 
-; push ax
-; push di
-; mov dx,8
-; mul dl
-; add ax,bx
-; add di,ax
-; mov ch,00
-; cmp [di],ch  ; if the cell is empty
-; je rook_threat_ye5s
-; mov ch,0AAh  ; checks if there is power up
-; cmp [di],ch
-; jne rook_threat_piecefound1 ; if there is piece
-; rook_threat_ye5s:
-; pop di
-; pop ax
-; jmp rook_threat_eachDirection1
-; rook_threat_piecefound1: ;checks if it is enemy or of the same type
-; pop di
-; pop ax
-; mov dx,ax
-; call is_B_here
-; mov dl,0
-; cmp valid,dl
-; jne rook_threat_anotherDirec1
-; call is_Brook
-; cmp valid,1
-; jne rook_checkbqueen
-; mov dl,1
-; mov W_threat,dl
-; jmp threat_exit
-; rook_checkbqueen:
-; call is_Bqueen
-; cmp valid,1
-; jne rook_nxtnxtVald
-; mov dl,1
-; mov W_threat,dl
-; jmp threat_exit
-; rook_threat_anotherDirec1:
-; add si,2
-; mov bl,Wking_col
-; mov al,Wking_row
-; mov ah,0
-; mov bh,0
-; dec cl
-; jnz rook_threat_x12
-; jmp rook_nxtnxtVald
-; rook_threat_x12:jmp rook_threat_loopOnAllDirection1
-; rook_nxtnxtVald:
 
 ;////////////////////////////////////////////////////////////////////////////////
-; nxtkingvald:
-; ;validate if king check king
-; mov cx,8d
-; mov di, offset kingOffset
+nxtkingvald:
+;validate if king check king
+mov cx,8d
+mov di, offset kingOffset
 
-; threat_cont1: 
-; mov bl,Wking_col
-; mov dl,Wking_row
-; mov bh,0
-; mov dh,0
-; mov al,[di]
-; add bl,al
-; mov al,[di+1]
-; add dl,al
-; add di,2
-; call isIn
-; cmp valid,1
-; jne threat_not_valid1
+threat_cont1: 
+mov bl,Wking_col
+mov dl,Wking_row
+mov bh,0
+mov dh,0
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne threat_not_valid1
 
-; call is_B_here
+call is_B_here
 
-; cmp valid,0
-; jne threat_not_valid1
-; call is_Bking
-; cmp valid,1
-; jne threat_not_valid1
-; mov dl,1
-; mov W_threat,dl
-; jmp threat_exit
-; threat_not_valid1:
-; dec cx
-; jnz threat_cont1
+cmp valid,0
+jne threat_not_valid1
+call is_Bking
+cmp valid,1
+jne threat_not_valid1
+mov dl,1
+mov W_threat,dl
+jmp threat_exit
+threat_not_valid1:
+dec cx
+jnz threat_cont1
 
 
-; ;validate if knight check king
+;validate if knight check king
 
-; mov cx,8d
-; mov di, offset knightOffset
-; threat_cont: 
-; mov bl,Wking_col
-; mov dl,Wking_row
-; mov bh,0
-; mov dh,0
-; mov al,[di]
-; add bl,al
-; mov al,[di+1]
-; add dl,al
-; add di,2
-; call isIn
-; cmp valid,1
-; jne threat_not_valid
-; call is_B_here      ; checks if there is a piece of the same type , if not continue, if there is do not draw highlight
-; cmp valid,0
-; jne threat_not_valid
-; call is_Bknight
-; cmp valid,1
-; jne threat_not_valid
-; mov dl,1
-; mov W_threat,dl
-; jmp threat_exit
-; threat_not_valid:
-; dec cx
-; jnz threat_cont
+mov cx,8d
+mov di, offset knightOffset
+threat_cont: 
+mov bl,Wking_col
+mov dl,Wking_row
+mov bh,0
+mov dh,0
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne threat_not_valid
+call is_B_here      ; checks if there is a piece of the same type , if not continue, if there is do not draw highlight
+cmp valid,0
+jne threat_not_valid
+call is_Bknight
+cmp valid,1
+jne threat_not_valid
+mov dl,1
+mov W_threat,dl
+jmp threat_exit
+threat_not_valid:
+dec cx
+jnz threat_cont
 
 threat_exit:
+mov bishop_Rook_flag,1
 pop_all
 ret
 check_wking_threat endp
