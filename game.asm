@@ -80,6 +80,7 @@ Bking_row db 0
 Bking_col db  4
 W_threat db 0
 B_threat db 0
+bishop_Rook_flag db 1
 W_threat_p db 00
 B_threat_p db 00
 from_color dw 0 
@@ -179,10 +180,11 @@ kingOffset label byte ; valid offsets for king moves
             db 0,1
 
 bishopOffset label byte ; valid offsets for bishop moves
+           db -1,1
+            db 1,1
             db 1,-1
             db -1,-1
-            db -1,1
-            db 1,1
+            
 
 RookOffset label byte   ; valid offsets for rook moves
             db 1,0
@@ -222,6 +224,16 @@ reset_game proc far
   mov to_row, 0
   mov to_col, 0
   mov to_color, 0 
+  mov Wking_row , 7 
+  mov Wking_col ,  4
+  mov Bking_row , 0 
+  mov Bking_col ,  4
+  mov bishop_Rook_flag , 1
+  mov W_threat , 0
+  mov B_threat , 0
+  mov bishop_Rook_flag , 1
+  mov W_threat_p , 00
+  mov B_threat_p , 00
   mov wFound, 0 
   mov wPiece, 0
   mov bPiece, 0
@@ -1033,8 +1045,8 @@ push ax
  jne notKing
  mov ax,s1_col
  mov Wking_col,Al
-  mov ax,row
- mov Bking_row,Al
+  mov ax,s1_row
+ mov Wking_row,Al
  ;Get the destination cell you want to move the piece to
    notKing: mov ax,s1_col
     mov to_col,ax
@@ -2351,8 +2363,8 @@ mov cl,1
 mov W_threat,cl
 jmp threat_exit
 nxt_type_vald:
-mov bx,1
-push bx
+
+
 ;validate if bishop check king
 mov si,offset bishopOffset
 mov bl,Wking_col
@@ -2395,20 +2407,17 @@ call is_B_here
 mov dl,0
 cmp valid,dl
 jne threat_anotherDirec1
-pop bx
-cmp bx,1
+cmp bishop_Rook_flag,1
 jne check_if_Rook
 call is_Bbishop
 jmp continue_Usual
 check_if_Rook:
 call is_Brook
 continue_Usual:
-push bx
 cmp valid,1
 jne checkbqueen
 mov dl,1
 mov W_threat,dl
-pop bx
 jmp threat_exit
 checkbqueen:
 call is_Bqueen
@@ -2416,7 +2425,6 @@ cmp valid,1
 jne nxtnxtVald
 mov dl,1
 mov W_threat,dl
-pop bx
 jmp threat_exit
 threat_anotherDirec1:
 add si,2
@@ -2429,12 +2437,9 @@ jnz threat_x12
 jmp nxtnxtVald
 threat_x12:jmp threat_loopOnAllDirection1
 nxtnxtVald:
-pop bx
-cmp bx,1
+cmp bishop_Rook_flag,1
 jne nxtkingvald
-dec bx
-push bx
-; validate if rook check king
+mov bishop_Rook_flag,0
 mov si,offset rookOffset
 mov bl,Wking_col
 mov al,Wking_row
@@ -2443,6 +2448,8 @@ mov ah,0
 mov di,offset boardMap
 mov cl,4
 jmp threat_loopOnAllDirection1
+
+
 ;////////////////////////////////////////////////////////////////////////////////
 nxtkingvald:
 ;validate if king check king
@@ -2509,6 +2516,7 @@ dec cx
 jnz threat_cont
 
 threat_exit:
+mov bishop_Rook_flag,1
 pop_all
 ret
 check_wking_threat endp
