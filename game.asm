@@ -2422,7 +2422,7 @@ jmp threat_exit
 checkbqueen:
 call is_Bqueen
 cmp valid,1
-jne nxtnxtVald
+jne threat_anotherDirec1
 mov dl,1
 mov W_threat,dl
 jmp threat_exit
