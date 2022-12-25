@@ -886,8 +886,8 @@ draw_valids endp
 
 
 Select_B proc ;Select Black piece to move it
-    cmp from_col_,8 ; check if First E
-    je skip_ ; Jump if First E
+    cmp from_col_,8 ; check if First select
+    je skip_ ; Jump if First select
      call isMarkB ;#######################################
         mov cl,1h
         cmp marked,cl
@@ -915,7 +915,7 @@ Select_B proc ;Select Black piece to move it
     ret
     skip_:  ; if you click first Q
     PUSH_ALL
-    ;Get First E  coordinates
+    ;Get First select  coordinates
     mov ax,s2_col
     mov from_col_,ax
     mov ax,s2_row
