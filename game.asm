@@ -693,8 +693,10 @@ deselect_valid2 endp
 ;--------------------------------------------------------------------------------------------------------------------------
 Select_W proc ;Select White piece to move it
     cmp from_col,8 ; check if First Q
-    je skip ; Jump if First Q
-        call isMarkW  ;checks if this a valid cell to move to
+    je Select_W_dummy_jmp
+    jmp Select_W_dummy_free
+     Select_W_dummy_jmp:jmp skip; Jump if First Q
+      Select_W_dummy_free:  call isMarkW  ;checks if this a valid cell to move to
         mov cl,1h
         cmp marked,cl
         je Highlighted
@@ -715,7 +717,7 @@ Select_W proc ;Select White piece to move it
     call check_wking_threat
     mov cl,1
     cmp W_threat,1
-    jne nothreat
+    jne try_black_threat_
        ;mov cursor
      mov ah,2
      mov dx,1819h
@@ -724,6 +726,19 @@ Select_W proc ;Select White piece to move it
     mov dx,offset W_threat_MSG
     int 21h
     mov W_threat,0
+     try_black_threat_:
+      call check_bking_threat
+    mov cl,1
+    cmp B_threat,1
+    jne nothreat
+        ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset B_threat_MSG
+    int 21h
+    mov B_threat,0
     ;updating the opponent's drawn valid cells (if exist) after my move
     nothreat: mov cx,8
     cmp from_col_,cx
@@ -944,8 +959,11 @@ draw_valids endp
 
 Select_B proc ;Select Black piece to move it
     cmp from_col_,8 ; check if First E
-    je skip_ ; Jump if First E
-     call isMarkB ;checks if this a valid cell to move to
+    je Select_B_dummy_jmp
+    jmp Select_B_dummy_free
+    
+    Select_B_dummy_jmp:jmp skip_ ; Jump if First E
+    Select_B_dummy_free: call isMarkB ;checks if this a valid cell to move to
         mov cl,1h
         cmp marked,cl 
         je Select_B_highlighted
@@ -967,7 +985,7 @@ Select_B proc ;Select Black piece to move it
         call check_wking_threat
     mov cl,1
     cmp W_threat,1
-    jne nothreat_
+    jne try_black_threat
         ; mov cursor
      mov ah,2
      mov dx,1819h
@@ -976,6 +994,19 @@ Select_B proc ;Select Black piece to move it
     mov dx,offset W_threat_MSG
     int 21h
     mov W_threat,0
+    try_black_threat:
+      call check_bking_threat
+    mov cl,1
+    cmp B_threat,1
+    jne nothreat_
+        ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset B_threat_MSG
+    int 21h
+    mov B_threat,0
     ;updating the opponent's drawn valid cells (if exist) after my move
     nothreat_:
         mov cx,8
@@ -1168,8 +1199,15 @@ Change_W_place endp
 Change_B_place proc 
 push ax
 call unmarkAllB
+mov cl,0Ah
+ cmp Bpiece_type,cl
+ jne notKing_
+ mov ax,s2_col
+ mov Bking_col,Al
+  mov ax,s2_row
+ mov Bking_row,Al
  ;Get the destination cell you want to move the piece to
-    mov ax,s2_col
+    notKing_:mov ax,s2_col
     mov to_col_,ax
     mov ax,s2_row
     mov to_row_,ax
@@ -1714,6 +1752,97 @@ mov valid,0
 exit:
 ret
 isIn endp
+;--------------------------------------------------------------------------------------------------------------------------------
+
+
+is_Wbishop proc 
+push_all
+mov valid,0
+cmp piece_type,23h
+jne secBlackBishop_
+mov valid,1
+jmp exitbishop_
+secBlackBishop_:
+cmp piece_type,33h
+jne exitbishop_
+mov valid,1
+jmp exitbishop_
+exitbishop_:
+pop_all
+ret
+is_Wbishop endp
+
+is_Wrook proc 
+push_all
+mov valid,0
+cmp piece_type,21h
+jne secBlackrook_
+mov valid,1
+jmp exitrook_
+secBlackrook_:
+cmp piece_type,31h
+jne exitrook_
+mov valid,1
+jmp exitrook_
+exitrook_:
+pop_all
+ret
+is_Wrook endp
+
+is_Wknight proc 
+push_all
+mov valid,0
+cmp piece_type,22h
+jne secWhiteknight_
+mov valid,1
+jmp exitknight_
+secWhiteknight_:
+cmp piece_type,32h
+jne exitknight_
+mov valid,1
+exitknight_:
+pop_all
+ret
+is_Wknight endp
+
+is_Wking proc 
+push_all
+mov valid,0
+cmp piece_type,1Ah
+jne nobking_
+mov valid,1
+nobking_:
+pop_all
+ret
+is_Wking endp
+
+is_Wqueen proc
+push_all
+mov valid,0
+cmp piece_type,1Bh
+jne nobqueen_
+mov valid,1
+nobqueen_:
+pop_all
+ret
+is_Wqueen endp
+
+is_Wpawn proc 
+push_all
+mov ah,0
+mov al,piece_type
+mov dl,10h
+div dl
+cmp al,5
+jne notPawn_
+mov valid,1
+jmp exitF_
+notPawn_:
+mov valid,0
+exitF_:
+pop_all
+ret
+is_Wpawn endp
 
 ;------------------------------------------------------------------------------------------------------
 knight_draw_valid proc   ; loops on the knight_offset array and validate each move, if valid--> draw highlighting to the cell
@@ -2521,6 +2650,200 @@ pop_all
 ret
 check_wking_threat endp
 
+;-----------------------------------------------------------  --------------------------------
+check_bking_threat proc  ; used to validate if there is a check for the white king
+push_all
+; first validate pawn check
+mov dl,Bking_row
+mov bl,Bking_col
+mov bh,0
+mov dh,0
+inc dl
+inc bl
+call isIn
+cmp valid,1
+jne nxt_dia_check_
+call is_W_here
+cmp valid,0
+jne nxt_dia_check_
+call is_Wpawn
+cmp valid,1
+jne nxt_dia_check_
+mov cl,1
+mov B_threat,cl
+jmp threat_exit_
+;validate the other diagonal
+nxt_dia_check_:
+sub bl,2
+call isIn
+cmp valid,1
+jne nxt_type_vald_
+call is_W_here
+cmp valid,0
+jne nxt_type_vald_
+call is_Wpawn
+cmp valid,1
+jne nxt_type_vald_
+mov cl,1
+mov B_threat,cl
+jmp threat_exit_
+nxt_type_vald_:
+
+;validate if bishop check king
+mov si,offset bishopOffset
+mov bl,Bking_col
+mov al,Bking_row
+mov bh,0
+mov ah,0
+mov di,offset boardMap
+mov cl,4
+threat_loopOnAllDirection1_: ; loop on each offset
+threat_eachDirection1_:  ; loops again and again  with same offset untill it reaches dead end 
+add al,[si+1]
+add bl,[si]
+mov dx,ax
+call isIn     ; checking for the boundaries
+cmp valid,1
+je threat_oka1_
+jmp threat_anotherDirec1_ ; try another offset
+threat_oka1_: 
+push ax
+push di
+mov dx,8
+mul dl
+add ax,bx
+add di,ax
+mov ch,00
+cmp [di],ch  ; if the cell is empty
+je threat_ye5s_
+mov ch,0AAh  ; checks if there is power up
+cmp [di],ch
+jne threat_piecefound1_ ; if there is piece
+threat_ye5s_:
+pop di
+pop ax
+jmp threat_eachDirection1_
+threat_piecefound1_: ;checks if it is enemy or of the same type
+pop di
+pop ax
+mov dx,ax
+call is_W_here
+mov dl,0
+cmp valid,dl
+jne threat_anotherDirec1_
+cmp bishop_Rook_flag,1
+jne check_if_Rook_
+call is_Wbishop
+jmp continue_Usual_
+check_if_Rook_:
+call is_Wrook
+continue_Usual_:
+cmp valid,1
+jne checkwqueen
+mov dl,1
+mov B_threat,dl
+jmp threat_exit_
+checkwqueen:
+call is_Wqueen
+cmp valid,1
+jne threat_anotherDirec1_
+mov dl,1
+mov B_threat,dl
+jmp threat_exit_
+threat_anotherDirec1_:
+add si,2
+mov bl,Bking_col
+mov al,Bking_row
+mov ah,0
+mov bh,0
+dec cl
+jnz threat_x12_
+jmp nxtnxtVald_
+threat_x12_:jmp threat_loopOnAllDirection1_
+nxtnxtVald_:
+cmp bishop_Rook_flag,1
+jne nxtkingvald_
+mov bishop_Rook_flag,0
+mov si,offset rookOffset
+mov bl,Bking_col
+mov al,Bking_row
+mov bh,0
+mov ah,0
+mov di,offset boardMap
+mov cl,4
+jmp threat_loopOnAllDirection1_
+
+
+;////////////////////////////////////////////////////////////////////////////////
+nxtkingvald_:
+;validate if king check king
+mov cx,8d
+mov di, offset kingOffset
+
+threat_cont1_: 
+mov bl,Bking_col
+mov dl,Bking_row
+mov bh,0
+mov dh,0
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne threat_not_valid1_
+
+call is_W_here
+
+cmp valid,0
+jne threat_not_valid1_
+call is_Wking
+cmp valid,1
+jne threat_not_valid1_
+mov dl,1
+mov B_threat,dl
+jmp threat_exit_
+threat_not_valid1_:
+dec cx
+jnz threat_cont1_
+
+
+;validate if knight check king
+
+mov cx,8d
+mov di, offset knightOffset
+threat_cont_: 
+mov bl,Bking_col
+mov dl,Bking_row
+mov bh,0
+mov dh,0
+mov al,[di]
+add bl,al
+mov al,[di+1]
+add dl,al
+add di,2
+call isIn
+cmp valid,1
+jne threat_not_valid_
+call is_W_here      ; checks if there is a piece of the same type , if not continue, if there is do not draw highlight
+cmp valid,0
+jne threat_not_valid_
+call is_Wknight
+cmp valid,1
+jne threat_not_valid_
+mov dl,1
+mov B_threat,dl
+jmp threat_exit_
+threat_not_valid_:
+dec cx
+jnz threat_cont_
+
+threat_exit_:
+mov bishop_Rook_flag,1
+pop_all
+ret
+check_bking_threat endp
 ;-----------------------------------------------------------------------------------------------------------------------------------------
 play proc far
     call init_draw
