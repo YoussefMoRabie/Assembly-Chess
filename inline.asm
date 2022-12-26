@@ -1,5 +1,22 @@
-include macros.inc
+;---------------------------Any Macros should be stored here------------------------------------------
+PUSH_ALL MACRO 
+            PUSH AX
+            PUSH BX
+            PUSH CX
+            PUSH DX
+            PUSH SI
+            PUSH DI
+ENDM PUSH_ALL
 
+POP_ALL MACRO 
+            POP DI
+            POP SI
+            POP DX
+            POP CX
+            POP BX
+            POP AX
+ENDM POP_ALL
+;----------------------------------------------------------------------------------------------------
 
 public inline_x,inline_y,inline_chat,show_player_name,inline_clear
 
