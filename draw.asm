@@ -38,11 +38,13 @@ extrn bSquare:byte
 extrn wSquare:byte
 extrn selector1:byte
 extrn selector2:byte
+extrn locker:byte
+extrn unlocker_black:byte
+extrn unlocker_white:byte
 extrn boardMap:byte
 extrn valid_row:byte
 extrn valid_col:byte
 extrn piece_type:byte
-extrn red_mark:byte
 extrn Star:byte
 extrn EndGame:byte
 

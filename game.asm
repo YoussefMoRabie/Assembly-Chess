@@ -48,7 +48,9 @@ extrn other_inline:far
 
 extrn white_deselector:byte
 extrn black_deselector:byte
-extrn red_mark:byte
+extrn locker:byte
+extrn unlocker_black:byte
+extrn unlocker_white:byte
 extrn Star:byte
 extrn bKing:byte
 extrn wKing:byte
