@@ -43,6 +43,7 @@ extrn draw_black_valid:far
 extrn Timer:far
 extrn PrintBlackKilled:far
 extrn PrintWhiteKilled:far
+extrn other_inline:far
 
 
 extrn white_deselector:byte
@@ -310,20 +311,20 @@ player_movement proc far
     mov ah,0
     int 16h
 
-    cmp ah,02h
-    je toggle_inline_chat
-
-    cmp player_chat,0ffh
-    je active_inline_chat
-
-    cmp ah,3eh
-    je game_to_menu
-    
     ;listens depending on the player_mode
+    cmp player_mode,1
+    je two_player_mode1
     cmp player_mode,2
-    je only_player2
+    je two_player_mode2
 
-    ;WASD + Q
+    ;-------------------------------------------------single device mode---------------------------------------------------------------
+    ;player pressed f4
+    cmp ah,3eh
+    jne not_menu
+    jmp game_to_menu
+    not_menu:
+
+    ;WASD + Q for player 1
     cmp ah,11h
     je up1
     cmp ah,1fh
@@ -333,14 +334,11 @@ player_movement proc far
     cmp ah,20h
     je right1
     cmp ah,10h
-    je select1
+    jne not_select1
+    jmp select1
+    not_select1:
 
-    ;skip player2 if the mode is set to 1
-    cmp player_mode,1
-    je no_key_pressed_game
-
-    ;arrow keys + RShift
-    only_player2:
+    ;arrow keys + keypad_0 for player 2
     cmp ah,48h
     je up2
     cmp ah,50h
@@ -349,30 +347,44 @@ player_movement proc far
     je left2
     cmp ah,4dh
     je right2
-    cmp ah,35h
-    je select2
+    cmp ah,52h
+    jne not_select2
+    jmp select2
+    not_select2:
 
-    ;the key pressed doesn't concern players
+    ;the key pressed doesn't concern players in single mode
     no_key_pressed_game:
     ret
 
-    ;player mode 3 is a code for returning to the menu
-    game_to_menu:
-    mov player_mode,3
-    ret
-
-    toggle_inline_chat:
-    not player_chat
-    cmp player_chat,0
-    je back_to_game
-    call show_player_name
-    back_to_game:
-    ret
-
-    active_inline_chat:
-    call inline_chat
-    ret
-
+    ;-------------------------------------------------------two device mode-------------------------------------------------------------
+    ;arrow keys + keypad_0 for both players
+    two_player_mode1:
+    cmp ah,48h
+    je up1
+    cmp ah,50h
+    je down1
+    cmp ah,4bh
+    je left1
+    cmp ah,4dh
+    je right1
+    cmp ah,52h
+    je select1
+    jmp go_inline_chat
+   
+    two_player_mode2:
+    cmp ah,48h
+    je up2
+    cmp ah,50h
+    je down2
+    cmp ah,4bh
+    je left2
+    cmp ah,4dh
+    je right2
+    cmp ah,52h
+    je select2
+    jmp go_inline_chat
+   
+    ;------------------------------------------------------------for either modes------------------------------------------------------------------
     up1:
     mov direction,0
     jmp move1
@@ -398,15 +410,14 @@ player_movement proc far
     right2:
     mov direction,3
     jmp move2
-;----------------------------------------------
+
     select1:
     call Select_W
     ret
-;----------------------------------------------
+
     select2:
     call Select_B
     ret
-;----------------------------------------------
 
     move1:
     call move_selector1
@@ -414,12 +425,82 @@ player_movement proc far
 
     move2:
     call move_selector2
+    ret   
+
+    go_inline_chat:
+    ;one of the players pressed f4
+    cmp ah,3eh
+    je game_to_menu
+
+    ;a button that isn't f4 nor a movement/select so we send it to the chat
+    call send_inline_chat
+    call inline_chat
     ret
-    
-    
+
+    ;player mode 3 is a code for returning to the menu
+    game_to_menu:
+    mov al,7
+    call send_inline_chat
+    mov player_mode,3
+    ret
 player_movement endp
 ;--------------------------------------------------------------------------------------------------------------
+send_inline_chat proc
+  push_all
+  ;sends inline chat letters
+  push ax
+  ;send a chat letter
+  mov dx , 3FDH		;Line Status Register
+  In al , dx 			;Read Line Status
+  AND al , 00100000b
+  JZ send_chat_done
 
+  ;If empty put the invitaion in Transmit data register
+  pop ax
+  mov dx , 3F8H		;Transmit data register
+  out dx, al 
+
+  send_chat_done:
+  pop_all
+  ret
+send_inline_chat endp
+
+recieve_game proc
+  push_all
+  ;recieves inline chat letters
+  ;Check that Data Ready
+  mov dx , 3FDH		;Line Status Register
+  in al , dx 
+  and al , 00000001b
+  Jz get_chat_done
+
+  ;If Ready read the VALUE in Receive data register
+  mov dx , 3F8H
+  in al , dx 
+  
+  ;other player pressed F4
+  cmp al,7
+  jne rec_not_menu
+  mov player_mode,3
+  ret
+  rec_not_menu:
+
+  cmp al,13
+  jne rec_not_enter
+  mov ah,1ch
+  rec_not_enter:
+
+  cmp al,8
+  jne rec_not_back
+  mov ah,0eh
+  rec_not_back:
+
+  call other_inline
+
+  get_chat_done:
+  pop_all
+  ret
+recieve_game endp
 ;-------------------------------------------player 1-----------------------------------------------------------
 move_selector1 proc
     ;moves the selector1 in the direction in variable "direction"
@@ -2865,11 +2946,13 @@ check_bking_threat endp
 ;-----------------------------------------------------------------------------------------------------------------------------------------
 play proc far
     call init_draw
+    call show_player_name
     call PowerUp
     playing:
-    call Timer
+        call Timer
         call player_movement
-        
+        call recieve_game
+
         cmp EndGame,0
         je continue_game
         wait_F4:
