@@ -587,7 +587,7 @@ recieve_game proc
   mov cl,ah
   mov to_col_,cx
   
-  call Change_B_place
+  call move_black
 
   End_recieve_game:
   pop_all
@@ -1146,15 +1146,182 @@ mov  Bpiece_type,al
 pop_all
 ret
 draw_valids endp
+;==================================================================
+move_black proc
+push_all
+call get_B_piece
+mov cl,0Ah
+ cmp Bpiece_type,cl
+ jne notKing_r
+ mov ax,from_col_
+ mov Bking_col,Al
+  mov ax,from_row_
+ mov Bking_row,Al
+ ;Get the destination cell you want to move the piece to
+    notKing_r:
+  ;------------------------------------------Bonus promotion
+  mov cl,40h
+  cmp Bpiece_type,cl
+  jl notPawn___r
+    mov cl,47h
+  cmp Bpiece_type,cl
+  jg notPawn___r
+      mov cx,7
+      cmp to_row_,cx
+      jne notPawn___r
+  mov Bpiece_type,0Bh
+  mov ax,offset bQueen
+  mov bPiece,ax
+    notPawn___r: 
+    push cx
+      lea bx,boardMap
+      mov ax,to_row_
+      mov cl,8
+      mul cl
+      add ax,to_col_
+      add bx,ax
+      mov al,[bx]
+      ;-------------Check if King Killed
+      cmp al,1Ah
+      Jne notEndGame_r
+      mov EndGame,1Ah
+      call PrintWinner
+      notEndGame_r:
+      ;------------check if you eat black peice
+      cmp al,00h
+      je no_White_eat_r
+      mov KilledWhite,al
+      call PrintWhiteKilled
+      no_White_eat_r:
+    pop cx
+    ;----------------
 
 
+    lea bx,boardMap
+
+    mov ax,from_row_
+     mov cl,8
+     mul cl
+     add ax,from_col_
+     add bx,ax
+    mov dl,[bx]
+    mov cx,00h
+    mov [bx],cl
+    lea bx,boardMap
+    mov ax,to_row_
+     mov cl,8
+     mul cl
+     add ax,to_col_
+     add bx,ax
+     mov al,Bpiece_type
+      mov[bx],al
+    ; get source cell color if row + col==odd --> cell is black
+    mov ax,from_col_
+    add ax,from_row_
+    and ax,0001h
+    cmp ax,0000h
+    jne b__cell__
+    call draw_W_from_cell_
+    jmp con_22
+    b__cell__:
+    call draw_B_from_cell_
+    con_22:
+        ; get distinion cell color if row + col==odd --> cell is black
+    mov ax,to_col_
+    add ax,to_row_
+    and ax,0001h
+    cmp ax,0000h
+    jne b___cell__
+    call draw_W_to_cell_
+    jmp coon__
+    b___cell__:
+    call draw_B_to_cell_
+    coon__:
+    mov cx ,to_col_
+    cmp cx, from_col
+    jne Skip___20
+    mov cx ,to_row_
+    cmp cx, from_row
+    jne Skip___20
+    call unmarkAllW
+    mov cx,8
+    mov from_col,cx
+    mov from_row,cx
+    Skip___20:
+    mov ax,bPiece
+    mov shape_to_draw,ax
+    mov ax,8
+    mov from_col_,ax
+    mov from_row_,ax
+    POP_ALL
+    call move_piece_
+    call draw_selector1
+
+ret
+move_black endp
+;-------------------------------------------------
+get_B_piece proc 
+     PUSH_ALL
+     lea bx,boardMap
+     mov ax,from_row_
+     mov cl,8
+     mul cl
+     add ax,from_col_
+     add bx,ax
+     mov al,[bx]
+     mov bPiece,offset bKnight
+     cmp al,02h
+     je found_b_ 
+     cmp al,12h
+     je found_b_
+    mov bPiece,offset bRook
+     cmp al,11h
+     je found_b_ 
+     cmp al,01h
+     je found_b_  
+     mov bPiece,offset bBishop
+     cmp al,13h
+     je found_b_ 
+     cmp al,03h
+     je found_b_
+     mov bPiece,offset bPawn
+     cmp al,40h
+     je found_b_ 
+     cmp al,41h
+     je found_b_ 
+     cmp al,42h
+     je found_b_ 
+     cmp al,43h
+     je found_b_ 
+     cmp al,44h
+     je found_b_ 
+     cmp al,45h
+     je found_b_ 
+     cmp al,46h
+     je found_b_ 
+     cmp al,47h
+     je found_b_ 
+     mov bPiece,offset bKing
+     cmp al,0Ah
+     je found_b_ 
+     mov bPiece,offset bQueen
+     cmp al,0Bh
+     je found_b_
+     jmp end_get
+     found_b_:
+          mov Bpiece_type,al
+     end_get:
+     POP_ALL
+     ret
+get_B_piece endp
 Select_B proc ;Select Black piece to move it
     cmp from_col_,8 ; check if First E
     je Select_B_dummy_jmp
     jmp Select_B_dummy_free
     
     Select_B_dummy_jmp:jmp skip_ ; Jump if First E
-    Select_B_dummy_free: call isMarkB ;checks if this a valid cell to move to
+    Select_B_dummy_free: 
+    call isMarkB ;checks if this a valid cell to move to
         mov cl,1h
         cmp marked,cl 
         je Select_B_highlighted
@@ -1415,7 +1582,8 @@ mov cl,0Ah
   mov ax,s2_row
  mov Bking_row,Al
  ;Get the destination cell you want to move the piece to
-    notKing_:mov ax,s2_col
+    notKing_:
+    mov ax,s2_col
     mov to_col_,ax
     mov ax,s2_row
     mov to_row_,ax
@@ -1500,7 +1668,6 @@ mov cl,0Ah
     mul cl
     add ax,from_col_
     mov from_cell,al
-
     add bx,ax
     mov al,[bx]
     mov cx,00h
@@ -2768,19 +2935,19 @@ PUSH_ALL
 
     skip_send_star:
 ;set star in boardMap
-     mov si,offset boardMap
-     add si,ax
-     mov cl,0AAh
-     mov[si],cl
+    mov si,offset boardMap
+    add si,ax
+    mov cl,0AAh
+    mov[si],cl
 
 ;get star col,row.
-     mov dh,8
-     div dh
-     mov cx,0
-     mov cl,al
-     mov row,cx
-     mov cl,ah
-     mov col,cx
+    mov dh,8
+    div dh
+    mov cx,0
+    mov cl,al
+    mov row,cx
+    mov cl,ah
+    mov col,cx
      mov shape_to_draw,offset Star
      call draw_cell
 POP_ALL
