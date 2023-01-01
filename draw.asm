@@ -404,25 +404,35 @@ draw_cell endp
 
 
 draw_selector1 proc far
-    push ax
-    mov shape_to_draw,offset selector1
-    mov ax,s1_col
-    mov col,ax
-    mov ax,s1_row
-    mov row,ax
-    call draw_cell
-    pop ax
-    ret
+     push ax
+     cmp player_mode,2
+     je no_selector_1
+
+     mov shape_to_draw,offset selector1
+     mov ax,s1_col
+     mov col,ax
+     mov ax,s1_row
+     mov row,ax
+     call draw_cell
+     
+     no_selector_1:
+     pop ax
+     ret
 draw_selector1 endp
 
 draw_selector2 proc far
     Push ax
+    cmp player_mode,1
+    je no_selector_2
+
     mov shape_to_draw,offset selector2
     mov ax,s2_col
     mov col,ax
     mov ax,s2_row
     mov row,ax
     call draw_cell
+    
+    no_selector_2:
     Pop ax
     ret
 draw_selector2 endp
@@ -858,17 +868,8 @@ init_draw proc far
 
      call draw_empty_board
      call draw_board_pieces
-     
-     cmp player_mode,2
-     je no_selector_1
      call draw_selector1
-     no_selector_1:
-
-     cmp player_mode,1
-     je no_selector_2
      call draw_selector2
-     no_selector_2:
-
      pop_all
      ret
 init_draw endp

@@ -1285,7 +1285,7 @@ mov cl,0Ah
     mov from_row_,ax
     POP_ALL
     call move_piece_
-    call draw_selector1
+    call draw_selector2
 
     cmp EndGame,1Ah
     jne sskkiipp_
@@ -1507,7 +1507,7 @@ mov cl,1Ah
     mov from_row,ax
     POP_ALL
     call move_piece
-    call draw_selector2
+    call draw_selector1
 
     cmp EndGame,0Ah
     jne sskkiipp
