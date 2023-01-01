@@ -216,9 +216,16 @@ chat_mode proc FAR
                  MOV      DL,AL
                  INT      21H
 
-    DONE_ENTER:  
+    DONE_ENTER: 
+
+                cmp _ah,3dh  
+                je go_to_menu 
                  mov      dx , 3F8H                     ; Transmit data register
                  out      dx , al
+
+               
+
+                
 
     DONE1:       
     
@@ -252,17 +259,13 @@ chat_mode proc FAR
                  mov      ah, 2
                  int      21h
     DONT_PRINT:
-                cmp _ah,3dh
                 
-                je go_to_menu
-
-                 JMP      CHAT
-
+                JMP      CHAT
     go_to_menu:
                 mov dx,3f8h
                 mov al,7
                 out dx,al
-
+ 
    go_to_menu2:             
 ret
 chat_mode endp
