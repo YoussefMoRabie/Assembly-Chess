@@ -87,8 +87,8 @@ min1 db 0
 min2 db 0
 Last db 0
 ;----------Status Bar Data-----------------------
-     White_win db "White Wins$"
-     Black_win db "Black Wins$"
+     White_win db "White Wins(F4)$"
+     Black_win db "Black Wins(F4)$"
      BPwenDie db "B-Pawn Died$"
      WPwenDie db "W-Pawn Died$"
      BKnightDie db "B-Knight Died$"
