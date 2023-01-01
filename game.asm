@@ -556,8 +556,8 @@ recieve_game proc
 
   mov dx,3f8h
   in al,dx
-
-
+  cmp player_mode,2
+je get_white
   mov ah,0
   mov dh,8
   div dh
@@ -586,6 +586,37 @@ recieve_game proc
   mov to_col_,cx
   
   call move_black
+  jmp End_recieve_game
+get_white:
+  mov ah,0
+  mov dh,8
+  div dh
+  mov cx,0
+  mov cl,al
+  mov from_row,cx
+  mov cl,ah
+  mov from_col,cx
+
+  recieve_to_again_:
+  mov dx , 3FDH		;Line Status Register
+  in al , dx 
+  and al , 00000001b
+  Jz recieve_to_again_
+
+  mov dx,3f8h
+  in al,dx
+
+  mov ah,0
+  mov dh,8
+  div dh
+  mov cx,0
+  mov cl,al
+  mov to_row,cx
+  mov cl,ah
+  mov to_col,cx
+  
+  call move_white
+
 
   End_recieve_game:
   pop_all
@@ -1218,10 +1249,10 @@ mov cl,0Ah
     add ax,from_row_
     and ax,0001h
     cmp ax,0000h
-    jne b__cell__
+    jne b__cell__b
     call draw_W_from_cell_
     jmp con_22
-    b__cell__:
+    b__cell__b:
     call draw_B_from_cell_
     con_22:
         ; get distinion cell color if row + col==odd --> cell is black
@@ -1255,6 +1286,56 @@ mov cl,0Ah
     call move_piece_
     call draw_selector1
 
+
+
+    push_all
+          mov ah,2
+       mov dx,1819h
+       int 10h 
+       mov ah, 9
+      mov dx,offset clean_threat
+       int 21h
+        call check_wking_threat
+    mov cl,1
+    cmp W_threat,1
+    jne try_black_threat_r
+        ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset W_threat_MSG
+    int 21h
+    mov W_threat,0
+    try_black_threat_r:
+      call check_bking_threat
+    mov cl,1
+    cmp B_threat,1
+    jne nothreat_r
+        ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset B_threat_MSG
+    int 21h
+    mov B_threat,0
+    ;updating the opponent's drawn valid cells (if exist) after my move
+    nothreat_r:
+        mov cx,8
+        cmp from_col,cx
+        je move_fin
+        mov al,piece_type
+        push AX
+        mov dl,Wpiece_type
+        mov piece_type,dl
+        call unmarkAllW
+        call draw_valids
+        pop ax
+        mov piece_type,al
+        move_fin:
+
+    pop_all
 ret
 move_black endp
 ;-------------------------------------------------
@@ -1312,6 +1393,227 @@ get_B_piece proc
      POP_ALL
      ret
 get_B_piece endp
+;------------------------------------------------------
+;==================================================================
+move_white proc
+push_all
+call get_W_piece
+mov cl,1Ah
+ cmp Wpiece_type,cl
+ jne notKing__r
+ mov ax,from_col
+ mov Wking_col,Al
+  mov ax,from_row
+ mov Wking_row,Al
+ ;Get the destination cell you want to move the piece to
+    notKing__r:
+  ;------------------------------------------Bonus promotion
+  mov cl,50h
+  cmp Wpiece_type,cl
+  jl notPawn____r
+    mov cl,57h
+  cmp Wpiece_type,cl
+  jg notPawn____r
+      mov cx,0
+      cmp to_row,cx
+      jne notPawn____r
+  mov Wpiece_type,1Bh
+  mov ax,offset wQueen
+  mov wPiece,ax
+    notPawn____r: 
+    push cx
+      lea bx,boardMap
+      mov ax,to_row
+      mov cl,8
+      mul cl
+      add ax,to_col
+      add bx,ax
+      mov al,[bx]
+      ;-------------Check if King Killed
+      cmp al,0Ah
+      Jne notEndGame_rr
+      mov EndGame,0Ah
+      call PrintWinner
+      notEndGame_rr:
+      ;------------check if you eat black peice
+      cmp al,00h
+      je no_Black_eat_r
+      mov KilledBlack,al
+      call PrintBlackKilled
+      no_Black_eat_r:
+
+    pop cx
+    ;----------------
+
+
+    lea bx,boardMap
+
+    mov ax,from_row
+     mov cl,8
+     mul cl
+     add ax,from_col
+     add bx,ax
+    mov dl,[bx]
+    mov cx,00h
+    mov [bx],cl
+    lea bx,boardMap
+    mov ax,to_row
+     mov cl,8
+     mul cl
+     add ax,to_col
+     add bx,ax
+     mov al,Wpiece_type
+      mov[bx],al
+    ; get source cell color if row + col==odd --> cell is black
+    mov ax,from_col
+    add ax,from_row
+    and ax,0001h
+    cmp ax,0000h
+    jne b__cell__
+    call draw_W_from_cell
+    jmp con_22_
+    b__cell__:
+    call draw_B_from_cell
+    con_22_:
+        ; get distinion cell color if row + col==odd --> cell is black
+    mov ax,to_col
+    add ax,to_row
+    and ax,0001h
+    cmp ax,0000h
+    jne b___cell__r
+    call draw_W_to_cell
+    jmp coon__r
+    b___cell__r:
+    call draw_B_to_cell
+    coon__r:
+    mov cx ,to_col
+    cmp cx, from_col_
+    jne Skip___20_
+    mov cx ,to_row
+    cmp cx, from_row_
+    jne Skip___20_
+    call unmarkAllB
+    mov cx,8
+    mov from_col_,cx
+    mov from_row_,cx
+    Skip___20_:
+    mov ax,wPiece
+    mov shape_to_draw,ax
+    mov ax,8
+    mov from_col,ax
+    mov from_row,ax
+    POP_ALL
+    call move_piece
+    call draw_selector2
+
+
+
+    push_all
+          mov ah,2
+       mov dx,1819h
+       int 10h 
+       mov ah, 9
+      mov dx,offset clean_threat
+       int 21h
+        call check_wking_threat
+    mov cl,1
+    cmp W_threat,1
+    jne try_black_threat_r_
+        ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset W_threat_MSG
+    int 21h
+    mov W_threat,0
+    try_black_threat_r_:
+      call check_bking_threat
+    mov cl,1
+    cmp B_threat,1
+    jne nothreat_r_
+        ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset B_threat_MSG
+    int 21h
+    mov B_threat,0
+    ;updating the opponent's drawn valid cells (if exist) after my move
+    nothreat_r_:
+        mov cx,8
+        cmp from_col_,cx
+        je move_fin_
+        mov al,piece_type
+        push AX
+        mov dl,Bpiece_type
+        mov piece_type,dl
+        call unmarkAllB
+        call draw_valids
+        pop ax
+        mov piece_type,al
+        move_fin_:
+
+    pop_all
+ret
+move_white endp
+;-------------------------------------------------
+get_W_piece proc 
+     PUSH_ALL
+     lea bx,boardMap
+     mov ax,from_row
+     mov cl,8
+     mul cl
+     add ax,from_col
+     add bx,ax
+     mov al,[bx]
+    mov wPiece,offset wRook
+     cmp al,31h
+     je found_w_r 
+     cmp al,21h
+     je found_w_r 
+          mov wPiece,offset wKnight
+     cmp al,22h
+     je found_w_r
+     cmp al,32h
+     je found_w_r
+     mov wPiece,offset wBishop
+     cmp al,23h
+     je found_w_r 
+     cmp al,33h
+     je found_w_r
+          mov wPiece,offset wPawn
+     cmp al,50h
+     je found_w_r 
+     cmp al,51h
+     je found_w_r 
+     cmp al,52h
+     je found_w_r 
+     cmp al,53h
+     je found_w_r 
+     cmp al,54h
+     je found_w_r 
+     cmp al,55h
+     je found_w_r 
+     cmp al,56h
+     je found_w_r 
+     cmp al,57h
+     je found_w_r 
+     mov wPiece,offset wKing
+     cmp al,1Ah
+     je found_w_r 
+     mov wPiece,offset wQueen
+     cmp al,1Bh
+     je found_w_r
+     jmp end_get_
+     found_w_r:
+          mov Wpiece_type,al
+     end_get_:
+     POP_ALL
+     ret
+get_W_piece endp
+;------------------------------------------------------
 Select_B proc ;Select Black piece to move it
     cmp from_col_,8 ; check if First E
     je Select_B_dummy_jmp
@@ -1521,6 +1823,7 @@ push ax
     mov cl,8
     mul cl
     add ax,from_col
+        mov from_cell,al
     add bx,ax
     mov al,[bx]
     mov cx,00h
@@ -1531,6 +1834,13 @@ push ax
     mov cx,8
     mul cx
     add ax,to_col
+    mov to_cell,al
+
+
+        cmp player_mode,1
+    jne no_send_white_
+    call send_movement
+    no_send_white_:
     add bx,ax
     pop ax
     mov al,Wpiece_type
