@@ -40,7 +40,7 @@ public chat_mode
     _ah            db ? 
 .code
 
-Show_Message_chat PROC
+
 Show_Message_chat PROC
                  PUSH_ALL
                  mov      ah,9h
@@ -49,7 +49,7 @@ Show_Message_chat PROC
                  POP_ALL
                  RET
 Show_Message_chat ENDP
-Show_Message_chat ENDP
+
 
 CURSOR_GOTO PROC
                  PUSH_ALL
