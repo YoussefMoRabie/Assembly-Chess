@@ -21,28 +21,25 @@ ENDM POP_ALL
 extrn player_name:byte
 extrn other_player_name:byte
 extrn player_mode:byte
-extrn menu:far
 
 public chat_mode
 
 ;------------------------------------------------------
 
 .MODEL small
-.STACK 100h
 .data
     chat_message_offset DW ?
-    X_now              Dw 0
-    Y_now              Dw 0
-    X_ME           Dw 3
-    Y_ME           Dw 0
-    X_YOU          Dw 4
-    Y_YOU          Dw 13
-    LINE           DB "----------------------------------------------------------------------------$"
-    YOU            DB "$"
-    ME             DB "$"
-    mrk             db ":$"
-    _ah                 db ? 
+    X_now              DB 0
+    Y_now              DB 0
+    X_ME           DB 3
+    Y_ME           DB 0
+    X_YOU          DB 4
+    Y_YOU          DB 13
+    LINE           DB "------------------------------------------------------------------------------------$"
+    mrk            db ":$"
+    _ah            db ? 
 .code
+
 
 Show_Message_chat PROC
                  PUSH_ALL
@@ -52,6 +49,7 @@ Show_Message_chat PROC
                  POP_ALL
                  RET
 Show_Message_chat ENDP
+
 
 CURSOR_GOTO PROC
                  PUSH_ALL
@@ -91,10 +89,6 @@ chat_mode proc FAR
                  MOV      AL,3
                  INT      10H
 
-                 
-
-
-
                  MOV      X_now,0
 
                  MOV      Y_now,12
@@ -128,7 +122,6 @@ chat_mode proc FAR
                  MOV     Y_YOU,14
 
     CHAT:        
- 
     ;Check that Transmitter Holding Register is Empty
                  mov      dx , 3FDH                     ; Line Status Register
     
@@ -145,7 +138,7 @@ chat_mode proc FAR
     ;K EY PRESSED, GET IT
                 MOV      AH,0
                  INT      16H
-                mov _ah,ah
+                 mov      _ah,ah
                  CMP      AH,1CH
                  JNE      NOT_ENTER
                  INC      Y_ME

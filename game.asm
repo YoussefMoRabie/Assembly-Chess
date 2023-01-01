@@ -136,6 +136,9 @@ valid db 1 ;input for macro to return 1 or 0 based on cell position
 marked db 0 
 EndGame db 0   ; if EndGame==0A --> white win
 
+from_cell db 0
+to_cell db 0
+
 WFT db 3  ; White Freezing Time
 BFT db 3 ; Black Freezing Time
 
@@ -443,8 +446,6 @@ player_movement proc far
 
     ;player mode 3 is a code for returning to the menu
     game_to_menu:
-    mov al,7
-    call send_inline_chat
     mov player_mode,3
     ret
 player_movement endp
@@ -452,7 +453,7 @@ player_movement endp
 send_inline_chat proc
   push_all
   ;sends inline chat letters
-  push ax
+  mov cx,ax
   ;send a chat letter
   mov dx , 3FDH		;Line Status Register
   In al , dx 			;Read Line Status
@@ -460,7 +461,7 @@ send_inline_chat proc
   JZ send_chat_done
 
   ;If empty put the invitaion in Transmit data register
-  pop ax
+  mov ax,cx
   mov dx , 3F8H		;Transmit data register
   out dx, al 
 
@@ -469,6 +470,44 @@ send_inline_chat proc
   ret
 send_inline_chat endp
 
+send_movement proc
+  push_all
+  ;send from_cell and to_cell to the other player
+  
+  indicator_again:
+  mov dx , 3FDH		;Line Status Register
+  In al , dx 			;Read Line Status
+  AND al , 00100000b
+  JZ indicator_again
+
+  mov dx , 3F8H		
+  mov al,1
+  out dx,al
+
+  from_cell_again:
+  mov dx , 3FDH		;Line Status Register
+  In al , dx 			;Read Line Status
+  AND al , 00100000b
+  JZ from_cell_again
+ 
+  mov dx , 3F8H		
+  mov al,from_cell
+  out dx,al
+
+  to_cell_again:
+  mov dx , 3FDH		;Line Status Register
+  In al , dx 			;Read Line Status
+  AND al , 00100000b
+  JZ to_cell_again
+  
+  mov dx , 3F8H		
+  mov al,to_cell
+  out dx,al
+ 
+  pop_all
+  ret
+send_movement endp
+
 recieve_game proc
   push_all
   ;recieves inline chat letters
@@ -476,8 +515,9 @@ recieve_game proc
   mov dx , 3FDH		;Line Status Register
   in al , dx 
   and al , 00000001b
-  Jz get_chat_done
-
+  Jnz recieve_game_con
+  jmp End_recieve_game
+  recieve_game_con:
   ;If Ready read the VALUE in Receive data register
   mov dx , 3F8H
   in al , dx 
@@ -498,10 +538,56 @@ recieve_game proc
   jne rec_not_back
   mov ah,0eh
   rec_not_back:
+  
+  ;other player is sending a move
+  cmp al,1
+  je recieve_movement
 
   call other_inline
+  jmp End_recieve_game
 
-  get_chat_done:
+  recieve_movement:
+  ;we loop until we get the from_cell and to_cell from the other player 
+  recieve_from_again:
+  mov dx , 3FDH		;Line Status Register
+  in al , dx 
+  and al , 00000001b
+  Jz recieve_from_again
+
+  mov dx,3f8h
+  in al,dx
+
+
+  mov ah,0
+  mov dh,8
+  div dh
+  mov cx,0
+  mov cl,al
+  mov from_row_,cx
+  mov cl,ah
+  mov from_col_,cx
+
+  recieve_to_again:
+  mov dx , 3FDH		;Line Status Register
+  in al , dx 
+  and al , 00000001b
+  Jz recieve_to_again
+
+  mov dx,3f8h
+  in al,dx
+
+  mov ah,0
+  mov dh,8
+  div dh
+  mov cx,0
+  mov cl,al
+  mov to_row_,cx
+  mov cl,ah
+  mov to_col_,cx
+  
+  call move_black
+
+  End_recieve_game:
   pop_all
   ret
 recieve_game endp
@@ -1058,15 +1144,182 @@ mov  Bpiece_type,al
 pop_all
 ret
 draw_valids endp
+;==================================================================
+move_black proc
+push_all
+call get_B_piece
+mov cl,0Ah
+ cmp Bpiece_type,cl
+ jne notKing_r
+ mov ax,from_col_
+ mov Bking_col,Al
+  mov ax,from_row_
+ mov Bking_row,Al
+ ;Get the destination cell you want to move the piece to
+    notKing_r:
+  ;------------------------------------------Bonus promotion
+  mov cl,40h
+  cmp Bpiece_type,cl
+  jl notPawn___r
+    mov cl,47h
+  cmp Bpiece_type,cl
+  jg notPawn___r
+      mov cx,7
+      cmp to_row_,cx
+      jne notPawn___r
+  mov Bpiece_type,0Bh
+  mov ax,offset bQueen
+  mov bPiece,ax
+    notPawn___r: 
+    push cx
+      lea bx,boardMap
+      mov ax,to_row_
+      mov cl,8
+      mul cl
+      add ax,to_col_
+      add bx,ax
+      mov al,[bx]
+      ;-------------Check if King Killed
+      cmp al,1Ah
+      Jne notEndGame_r
+      mov EndGame,1Ah
+      call PrintWinner
+      notEndGame_r:
+      ;------------check if you eat black peice
+      cmp al,00h
+      je no_White_eat_r
+      mov KilledWhite,al
+      call PrintWhiteKilled
+      no_White_eat_r:
+    pop cx
+    ;----------------
 
 
+    lea bx,boardMap
+
+    mov ax,from_row_
+     mov cl,8
+     mul cl
+     add ax,from_col_
+     add bx,ax
+    mov dl,[bx]
+    mov cx,00h
+    mov [bx],cl
+    lea bx,boardMap
+    mov ax,to_row_
+     mov cl,8
+     mul cl
+     add ax,to_col_
+     add bx,ax
+     mov al,Bpiece_type
+      mov[bx],al
+    ; get source cell color if row + col==odd --> cell is black
+    mov ax,from_col_
+    add ax,from_row_
+    and ax,0001h
+    cmp ax,0000h
+    jne b__cell__
+    call draw_W_from_cell_
+    jmp con_22
+    b__cell__:
+    call draw_B_from_cell_
+    con_22:
+        ; get distinion cell color if row + col==odd --> cell is black
+    mov ax,to_col_
+    add ax,to_row_
+    and ax,0001h
+    cmp ax,0000h
+    jne b___cell__
+    call draw_W_to_cell_
+    jmp coon__
+    b___cell__:
+    call draw_B_to_cell_
+    coon__:
+    mov cx ,to_col_
+    cmp cx, from_col
+    jne Skip___20
+    mov cx ,to_row_
+    cmp cx, from_row
+    jne Skip___20
+    call unmarkAllW
+    mov cx,8
+    mov from_col,cx
+    mov from_row,cx
+    Skip___20:
+    mov ax,bPiece
+    mov shape_to_draw,ax
+    mov ax,8
+    mov from_col_,ax
+    mov from_row_,ax
+    POP_ALL
+    call move_piece_
+    call draw_selector1
+
+ret
+move_black endp
+;-------------------------------------------------
+get_B_piece proc 
+     PUSH_ALL
+     lea bx,boardMap
+     mov ax,from_row_
+     mov cl,8
+     mul cl
+     add ax,from_col_
+     add bx,ax
+     mov al,[bx]
+     mov bPiece,offset bKnight
+     cmp al,02h
+     je found_b_ 
+     cmp al,12h
+     je found_b_
+    mov bPiece,offset bRook
+     cmp al,11h
+     je found_b_ 
+     cmp al,01h
+     je found_b_  
+     mov bPiece,offset bBishop
+     cmp al,13h
+     je found_b_ 
+     cmp al,03h
+     je found_b_
+     mov bPiece,offset bPawn
+     cmp al,40h
+     je found_b_ 
+     cmp al,41h
+     je found_b_ 
+     cmp al,42h
+     je found_b_ 
+     cmp al,43h
+     je found_b_ 
+     cmp al,44h
+     je found_b_ 
+     cmp al,45h
+     je found_b_ 
+     cmp al,46h
+     je found_b_ 
+     cmp al,47h
+     je found_b_ 
+     mov bPiece,offset bKing
+     cmp al,0Ah
+     je found_b_ 
+     mov bPiece,offset bQueen
+     cmp al,0Bh
+     je found_b_
+     jmp end_get
+     found_b_:
+          mov Bpiece_type,al
+     end_get:
+     POP_ALL
+     ret
+get_B_piece endp
 Select_B proc ;Select Black piece to move it
     cmp from_col_,8 ; check if First E
     je Select_B_dummy_jmp
     jmp Select_B_dummy_free
     
     Select_B_dummy_jmp:jmp skip_ ; Jump if First E
-    Select_B_dummy_free: call isMarkB ;checks if this a valid cell to move to
+    Select_B_dummy_free: 
+    call isMarkB ;checks if this a valid cell to move to
         mov cl,1h
         cmp marked,cl 
         je Select_B_highlighted
@@ -1182,14 +1435,30 @@ push ax
   mov ax,s1_row
  mov Wking_row,Al
  ;Get the destination cell you want to move the piece to
-   notKing: mov ax,s1_col
+   notKing: 
+   mov ax,s1_col
     mov to_col,ax
     mov ax,s1_row
     mov to_row,ax
     mov ax,0
     mov al,s1_color
     mov to_color,ax
-    ;---------Bonus
+    ;------------------------------------------Bonus promotion
+  mov cl,50h
+  cmp Wpiece_type,cl
+  jl notPawn__
+    mov cl,57h
+  cmp Wpiece_type,cl
+  jg notPawn__
+      mov cx,0
+      cmp to_row,cx
+      jne notPawn__
+  mov Wpiece_type,1Bh
+  mov ax,offset wQueen
+  mov wPiece,ax
+
+    notPawn__: 
+    ;---------Bonus frezzing
     push cx
     ; get index of destination cell in array to freeze it after moving 
       lea bx,boardMap
@@ -1264,6 +1533,7 @@ push ax
     add ax,to_col
     add bx,ax
     pop ax
+    mov al,Wpiece_type
     mov [bx],al
     mov cx ,to_col
     cmp cx, from_col_
@@ -1310,14 +1580,30 @@ mov cl,0Ah
   mov ax,s2_row
  mov Bking_row,Al
  ;Get the destination cell you want to move the piece to
-    notKing_:mov ax,s2_col
+    notKing_:
+    mov ax,s2_col
     mov to_col_,ax
     mov ax,s2_row
     mov to_row_,ax
     mov ax,0
     mov al,s2_color
     mov to_color_,ax
-        ;---------Bonus
+        ;------------------------------------------Bonus promotion
+  mov cl,40h
+  cmp Bpiece_type,cl
+  jl notPawn___
+    mov cl,47h
+  cmp Bpiece_type,cl
+  jg notPawn___
+      mov cx,7
+      cmp to_row_,cx
+      jne notPawn___
+  mov Bpiece_type,0Bh
+  mov ax,offset bQueen
+  mov bPiece,ax
+
+    notPawn___: 
+        ;---------Bonus freezing
     push cx
       ; get index of destination cell in array to freeze it after moving 
       lea bx,boardMap
@@ -1379,6 +1665,7 @@ mov cl,0Ah
     mov cl,8
     mul cl
     add ax,from_col_
+    mov from_cell,al
     add bx,ax
     mov al,[bx]
     mov cx,00h
@@ -1389,8 +1676,16 @@ mov cl,0Ah
     mov cx,8
     mul cx
     add ax,to_col_
+    mov to_cell,al
+
+    cmp player_mode,2
+    jne no_send_black_
+    call send_movement
+    no_send_black_:
+
     add bx,ax
     pop ax
+    mov al,Bpiece_type
     mov [bx],al
     mov cx ,to_col_
     cmp cx, from_col
@@ -1412,8 +1707,6 @@ mov cl,0Ah
     je SkipFreezing1_
     call FreezingB
     SkipFreezing1_:
-    ;
-    ;
     ;Return From_ row and col to their init val
     mov ax,8
     mov from_col_,ax
@@ -2597,6 +2890,21 @@ delete_locker endp
 ;------------------------------------------------------- PowerUp bonus 1-------------------------------------------------------------------
 PowerUp proc 
 PUSH_ALL
+    cmp player_mode,2
+    jne skip_recieve_star
+    start_recieve_star:
+    mov dx , 3FDH		;Line Status Register
+    in al , dx 
+    and al , 00000001b
+    Jnz recieve_star_con
+    jmp start_recieve_star
+    recieve_star_con:
+    ;If Ready read the VALUE in Receive data register
+    mov dx , 3F8H
+    in al , dx 
+    mov ah,0
+    jmp skip_send_star
+    skip_recieve_star:
 ;get time.
      mov  ah, 2ch
      int  21h
@@ -2608,19 +2916,34 @@ PUSH_ALL
      add ah ,16
      mov al,ah
      mov ah,0
+     mov cx,ax
+    cmp player_mode,1
+    jne skip_send_star
+  indicator_again_star:
+  mov dx , 3FDH		;Line Status Register
+  In al , dx 			;Read Line Status
+  AND al , 00100000b
+  JZ indicator_again_star
+  mov dx , 3F8H		
+  mov ax,cx
+  out dx,al
+
+
+    skip_send_star:
 ;set star in boardMap
-     mov si,offset boardMap
-     add si,ax
-     mov cl,0AAh
-     mov[si],cl
+    mov si,offset boardMap
+    add si,ax
+    mov cl,0AAh
+    mov[si],cl
+
 ;get star col,row.
-     mov dh,8
-     div dh
-     mov cx,0
-     mov cl,al
-     mov row,cx
-     mov cl,ah
-     mov col,cx
+    mov dh,8
+    div dh
+    mov cx,0
+    mov cl,al
+    mov row,cx
+    mov cl,ah
+    mov col,cx
      mov shape_to_draw,offset Star
      call draw_cell
 POP_ALL
@@ -3032,6 +3355,17 @@ play proc far
         cmp EndGame,0
         je continue_game
         wait_F4:
+            ;if in multiplayer mode we send f4 to the other player to return them to the menu
+            cmp player_mode,0
+            je no_recieve_f4
+            call recieve_game
+            cmp player_mode,3
+            je f4_recieved
+            no_recieve_f4:
+
+            mov ah,1
+            int 16h
+            jz wait_F4
             mov ah,0
             int 16h
             cmp ah,3eh
@@ -3043,7 +3377,17 @@ play proc far
         je F4_pressed
     jmp playing
 
-    F4_pressed:
+    F4_pressed:   
+    send_f4_again:
+    mov dx , 3FDH		;Line Status Register
+    In al , dx 			;Read Line Status
+    AND al , 00100000b
+    JZ send_f4_again
+    
+    mov dx,3F8H		
+    mov al,7
+    out dx,al
+    f4_recieved:
     ret 
 play endp
 end
