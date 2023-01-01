@@ -28,7 +28,7 @@ public chat_mode
 
 .MODEL small
 .data
-    chat_message_offset DW ?
+    chat_message_offset Dw ?
     X_now              DB 0
     Y_now              DB 0
     X_ME           DB 3
@@ -184,7 +184,7 @@ chat_mode proc FAR
     
                  In       al , dx                       ;Read Line Status
                  AND      al , 00100000b
-                 JNZ      SEND_CHECK
+                 JZ      DONE1
 
     ;If empty put the VALUE in Transmit data register
     SEND_CHECK:  
@@ -206,6 +206,7 @@ chat_mode proc FAR
                  CALL     CURSOR_ME
                  CALL     CURSOR_GOTO
                  INC      X_ME
+                 
 
                  MOV      AH,2
                  MOV      DL,AL
