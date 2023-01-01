@@ -40,6 +40,7 @@ other_player_name_index db 0
 got_player_name db 0 ;checks if we got the other player name or not
 sent_player_name db 0 ;checks if we sent our name to the other player or not
 sent_first_letter db 0 
+connected db 0 ;connection indicator
 sent_inv db 0
 recieved_inv db 0
 temp_inv db 0
@@ -266,6 +267,16 @@ get_player_name proc
     jmp name_error_loop
 
     no_name_error:
+    ;indicate the connection to the other player
+    connect_again:
+    mov dx , 3FDH		;Line Status Register
+    In al , dx 			;Read Line Status
+    and al , 00100000b
+    Jz connect_again
+
+    mov dx,3f8h
+    mov al,1
+    out dx,al
     pop_all
     ret
 get_player_name endp
@@ -286,11 +297,15 @@ get_other_player_name proc
 
     cmp al,'$'
     je getting_name_done
+
+    cmp al,1
+    je other_player_connected
     
     mov bl,other_player_name_index
     mov bh,0
     mov other_player_name[bx],al
     inc other_player_name_index
+    mov connected,1
 
     ;half enter check - means name is done
     cmp al,13
@@ -301,26 +316,23 @@ get_other_player_name proc
     getting_name_done:
     pop_all
     ret
+
+    other_player_connected:
+    mov connected,1
+    jmp getting_name_done
 get_other_player_name endp
 
 send_player_name proc
 ;send your own name to the other player letter by letter
     push_all
-
+    cmp connected,0
+    je sending_name_done
 ;Check that Transmitter Holding Register is Empty
     mov dx , 3FDH		;Line Status Register
     In al , dx 			;Read Line Status
 
     and al , 00100000b
     Jz sending_name_done
-
-    ;other player haven't connected yet
-    cmp sent_first_letter,0
-    je no_first_letter
-
-    cmp other_player_name[0],'$'
-    je sending_name_done
-    no_first_letter:
 
     ;If empty put the VALUE in Transmit data register
     mov dx , 3F8H		; Transmit data register
@@ -329,7 +341,6 @@ send_player_name proc
     mov al,player_name[bx]
     out dx, al 
     inc player_name_index
-    mov sent_first_letter,1
 
     ;half enter check - means name is done
     cmp player_name[bx],13

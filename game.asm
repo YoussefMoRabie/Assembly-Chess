@@ -2749,7 +2749,7 @@ PUSH_ALL
      add ah ,16
      mov al,ah
      mov ah,0
-     push ax
+     mov cx,ax
     cmp player_mode,1
     jne skip_send_star
   indicator_again_star:
@@ -2758,10 +2758,8 @@ PUSH_ALL
   AND al , 00100000b
   JZ indicator_again_star
   mov dx , 3F8H		
-  pop ax
+  mov ax,cx
   out dx,al
-
-
 
 
     skip_send_star:
