@@ -21,14 +21,12 @@ ENDM POP_ALL
 extrn player_name:byte
 extrn other_player_name:byte
 extrn player_mode:byte
-extrn menu:far
 
 public chat_mode
 
 ;------------------------------------------------------
 
 .MODEL small
-.STACK 100h
 .data
     MESSAGE_OFFSET DW ?
     X_now              DB 0
@@ -38,20 +36,18 @@ public chat_mode
     X_YOU          DB 4
     Y_YOU          DB 13
     LINE           DB "------------------------------------------------------------------------------------$"
-    YOU            DB "$"
-    ME             DB "$"
-    mrk             db ":$"
-    _ah                 db ? 
+    mrk            db ":$"
+    _ah            db ? 
 .code
 
-Show_Message PROC
+Show_Message_chat PROC
                  PUSH_ALL
                  mov      ah,9h
                  mov      dx,MESSAGE_OFFSET
                  int      21h
                  POP_ALL
                  RET
-Show_Message ENDP
+Show_Message_chat ENDP
 
 CURSOR_GOTO PROC
                  PUSH_ALL
@@ -148,24 +144,20 @@ chat_mode proc FAR
                  MOV      AL,3
                  INT      10H
 
-                 
-
-
-
                  MOV      X_now,0
 
                  MOV      Y_now,12
                  CALL     CURSOR_GOTO
                  MOV      MESSAGE_OFFSET,OFFSET LINE
-                 CALL     Show_Message
+                 CALL     Show_Message_chat
 
                  MOV      Y_now,1
                  MOV      X_now,1 
                  CALL     CURSOR_GOTO
                  MOV      MESSAGE_OFFSET,OFFSET player_name
-                 CALL     Show_Message
-                MOV      MESSAGE_OFFSET,OFFSET mrk
-                CALL     Show_Message
+                 CALL     Show_Message_chat
+                 MOV      MESSAGE_OFFSET,OFFSET mrk
+                 CALL     Show_Message_chat
 
 
 
@@ -173,9 +165,9 @@ chat_mode proc FAR
                  CALL     CURSOR_GOTO
                 
                  MOV      MESSAGE_OFFSET,OFFSET other_player_name
-                 CALL     Show_Message
-                MOV      MESSAGE_OFFSET,OFFSET mrk
-                CALL     Show_Message
+                 CALL     Show_Message_chat
+                 MOV      MESSAGE_OFFSET,OFFSET mrk
+                 CALL     Show_Message_chat
 
                  MOV      X_ME,2
                  MOV     Y_ME,2
@@ -183,7 +175,6 @@ chat_mode proc FAR
                  MOV     Y_YOU,14
 
     CHAT:        
- 
     ;Check that Transmitter Holding Register is Empty
                  mov      dx , 3FDH                     ; Line Status Register
     
@@ -200,7 +191,7 @@ chat_mode proc FAR
     ;KEY PRESSED, GET IT
                  MOV      AH,0
                  INT      16H
-                mov _ah,ah
+                 mov      _ah,ah
                  CMP      AH,1CH
                  JNE      NOT_ENTER
                  INC      Y_ME
@@ -253,10 +244,8 @@ chat_mode proc FAR
                  int      21h
     DONT_PRINT:
                 cmp _ah,3dh
-                
                 je go_to_menu
-
-                 JMP      CHAT
+                JMP CHAT
 
     go_to_menu:
                 mov dx,3f8h
