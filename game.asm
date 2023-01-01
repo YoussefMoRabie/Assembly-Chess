@@ -468,6 +468,25 @@ send_inline_chat proc
   pop_all
   ret
 send_inline_chat endp
+send_movement proc
+  push_all
+  ;sends inline chat letters
+  mov cx, ax
+  ;send a chat letter
+  mov dx , 3FDH		;Line Status Register
+  In al , dx 			;Read Line Status
+  AND al , 00100000b
+  JZ send_movement_done
+
+  ;If empty put the invitaion in Transmit data register
+  mov ax,cx
+  mov dx , 3F8H		;Transmit data register
+  out dx, al 
+
+  send_movement_done:
+  pop_all
+  ret
+send_movement endp
 
 recieve_game proc
   push_all
@@ -476,32 +495,69 @@ recieve_game proc
   mov dx , 3FDH		;Line Status Register
   in al , dx 
   and al , 00000001b
-  Jz get_chat_done
-
+  Jnz recieve_game_con
+  jmp End_recieve_game
+  recieve_game_con:
   ;If Ready read the VALUE in Receive data register
   mov dx , 3F8H
   in al , dx 
   
-  ;other player pressed F4
-  cmp al,7
-  jne rec_not_menu
-  mov player_mode,3
-  ret
-  rec_not_menu:
+  ; ;other player pressed F4
+  ; cmp al,7
+  ; jne rec_not_menu
+  ; mov player_mode,3
+  ; ret
+  ; rec_not_menu:
 
-  cmp al,13
-  jne rec_not_enter
-  mov ah,1ch
-  rec_not_enter:
+  ; cmp al,13
+  ; jne rec_not_enter
+  ; mov ah,1ch
+  ; rec_not_enter:
 
-  cmp al,8
-  jne rec_not_back
-  mov ah,0eh
-  rec_not_back:
+  ; cmp al,8
+  ; jne rec_not_back
+  ; mov ah,0eh
+  ; rec_not_back:
+  ; call other_inline
+  ; get_chat_done:
+    ; cmp player_mode,1
+    ; jne test_player_mode_2
+    ; cmp from_col_,8
+    ; jne distinition 
+    add al,'0'
+    call other_inline
+    sub al,'0'
+    mov dh,8
+    div dh
+    mov cx,0
+    mov cl,al
+    mov from_row_,cx
+    mov cl,ah
+    mov from_col_,cx
+    distinition:
 
-  call other_inline
+    mov dx , 3F8H
+    in al , dx 
 
-  get_chat_done:
+    
+    add al,'0'
+    call other_inline
+    sub al,'0'
+
+    mov dh,8
+    div dh
+    mov cx,0
+    mov cl,al
+    mov to_row_,cx
+    mov cl,ah
+    mov to_col_,cx
+    ; call Change_B_place
+    ;TODO
+    test_player_mode_2:
+    ; cmp player_mode,2
+    ; je two_player_mode2
+
+  End_recieve_game:
   pop_all
   ret
 recieve_game endp
@@ -1411,6 +1467,10 @@ mov cl,0Ah
     mov cl,8
     mul cl
     add ax,from_col_
+    cmp player_mode,2
+    jne no_send_black
+    call send_movement
+    no_send_black:
     add bx,ax
     mov al,[bx]
     mov cx,00h
@@ -1421,6 +1481,10 @@ mov cl,0Ah
     mov cx,8
     mul cx
     add ax,to_col_
+    cmp player_mode,2
+    jne no_send_black_
+    call send_movement
+    no_send_black_:
     add bx,ax
     pop ax
     mov al,Bpiece_type
@@ -1445,8 +1509,6 @@ mov cl,0Ah
     je SkipFreezing1_
     call FreezingB
     SkipFreezing1_:
-    ;
-    ;
     ;Return From_ row and col to their init val
     mov ax,8
     mov from_col_,ax
