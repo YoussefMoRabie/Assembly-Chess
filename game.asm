@@ -3665,6 +3665,17 @@ play proc far
         cmp EndGame,0
         je continue_game
         wait_F4:
+            ;if in multiplayer mode we send f4 to the other player to return them to the menu
+            cmp player_mode,0
+            je no_recieve_f4
+            call recieve_game
+            cmp player_mode,3
+            je f4_recieved
+            no_recieve_f4:
+
+            mov ah,1
+            int 16h
+            jz wait_F4
             mov ah,0
             int 16h
             cmp ah,3eh
@@ -3676,9 +3687,7 @@ play proc far
         je F4_pressed
     jmp playing
 
-    F4_pressed:
-    cmp player_mode,0
-    
+    F4_pressed:   
     send_f4_again:
     mov dx , 3FDH		;Line Status Register
     In al , dx 			;Read Line Status
@@ -3688,6 +3697,7 @@ play proc far
     mov dx,3F8H		
     mov al,7
     out dx,al
+    f4_recieved:
     ret 
 play endp
 end
