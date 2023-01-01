@@ -121,6 +121,8 @@ from_color_ dw 0
 to_row_ dw 0
 to_col_ dw 0
 to_color_ dw 0 
+del_row dw 0 
+del_col dw 0 
 ;-----------------------------------------------------------------------------
 player_chat db 0
 s1_row dw 7
@@ -2479,6 +2481,19 @@ c_o_n:
     add bx,ax
     mov al,WFT
     mov [bx],al
+    mov ax,col
+    mov bx,row
+    mov cx, shape_to_draw
+    mov dx,to_col
+    mov col,dx
+    mov dx,to_row
+    mov row,dx
+    mov dx,offset locker
+    mov shape_to_draw,dx
+    call draw_cell
+    mov col,ax
+    mov row,bx
+    mov shape_to_draw,cx
 POP_ALL
      ret 
 FreezingW endp
@@ -2503,6 +2518,19 @@ c_o_n_:
     add bx,ax
     mov al,BFT
     mov [bx],al
+    mov ax,col
+    mov bx,row
+    mov cx, shape_to_draw
+    mov dx,to_col_
+    mov col,dx
+    mov dx,to_row_
+    mov row,dx
+    mov dx,offset locker
+    mov shape_to_draw,dx
+    call draw_cell
+    mov col,ax
+    mov row,bx
+    mov shape_to_draw,cx
 POP_ALL
      ret 
 FreezingB endp
@@ -2517,12 +2545,55 @@ update_Last_move_time proc far
         je update_loop_end
         sub al,1
         mov [bx],al
+        cmp al,0
+        Jne update_loop_end
+        call delete_locker
       update_loop_end:
       inc bx
       loop update_loop
     pop_all
      ret
 update_Last_move_time endp
+;-------------------------------------------------------------------------------------------------------------------------------------
+delete_locker proc 
+     push_all
+        mov ax,64
+    sub ax,cx
+     mov dh,8
+     div dh
+     mov cx,0
+     mov cl,al
+     mov del_row,cx
+     mov cl,ah
+     mov del_col,cx
+    mov ax,del_col
+    add ax,del_row
+    and ax,0001h
+    cmp ax,0000h
+    jne delete_lockerBcell
+    lea bx,unlocker_white
+    jmp delete_locker_con
+    delete_lockerBcell:
+    lea bx,unlocker_black
+    delete_locker_con:
+    mov ax,64
+    sub ax,cx
+    mov si,col
+    mov dx,row
+    mov cx, shape_to_draw
+    mov shape_to_draw,bx
+
+ mov ax ,del_row
+     mov row,ax
+mov ax,del_col
+     mov col,ax
+    call draw_cell
+    mov col,si
+    mov row,dx
+    mov shape_to_draw,cx
+    pop_all
+     ret
+delete_locker endp
 ;------------------------------------------------------- PowerUp bonus 1-------------------------------------------------------------------
 PowerUp proc 
 PUSH_ALL
