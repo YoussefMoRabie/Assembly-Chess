@@ -446,8 +446,6 @@ player_movement proc far
 
     ;player mode 3 is a code for returning to the menu
     game_to_menu:
-    mov al,7
-    call send_inline_chat
     mov player_mode,3
     ret
 player_movement endp
@@ -2918,7 +2916,7 @@ PUSH_ALL
      add ah ,16
      mov al,ah
      mov ah,0
-     push ax
+     mov cx,ax
     cmp player_mode,1
     jne skip_send_star
   indicator_again_star:
@@ -2927,10 +2925,8 @@ PUSH_ALL
   AND al , 00100000b
   JZ indicator_again_star
   mov dx , 3F8H		
-  pop ax
+  mov ax,cx
   out dx,al
-
-
 
 
     skip_send_star:
@@ -3371,6 +3367,17 @@ play proc far
     jmp playing
 
     F4_pressed:
+    cmp player_mode,0
+    
+    send_f4_again:
+    mov dx , 3FDH		;Line Status Register
+    In al , dx 			;Read Line Status
+    AND al , 00100000b
+    JZ send_f4_again
+    
+    mov dx,3F8H		
+    mov al,7
+    out dx,al
     ret 
 play endp
 end
