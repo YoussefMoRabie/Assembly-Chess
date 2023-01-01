@@ -66,6 +66,7 @@ extrn wFound:word
 extrn bFound:word
 extrn wPiece:word
 extrn bPiece:word
+extrn player_mode:byte
 
 public draw_cell, get_cell_start,draw_valid_cell,draw_white_valid,draw_black_valid ,draw_selector1, draw_selector2, init_draw,move_piece,draw_W_from_cell
 public draw_B_from_cell,draw_W_to_cell,draw_B_to_cell,Timer,PrintWinner,reset_timer,PrintBlackKilled,KilledBlack,KilledWhite,PrintWhiteKilled
@@ -857,8 +858,17 @@ init_draw proc far
 
      call draw_empty_board
      call draw_board_pieces
+     
+     cmp player_mode,2
+     je no_selector_1
      call draw_selector1
+     no_selector_1:
+
+     cmp player_mode,1
+     je no_selector_2
      call draw_selector2
+     no_selector_2:
+
      pop_all
      ret
 init_draw endp
