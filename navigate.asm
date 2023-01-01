@@ -16,6 +16,8 @@ POP_ALL MACRO
             POP BX
             POP AX
 ENDM POP_ALL
+
+
 ;----------------------------------------------------------------------------------------------------
 extrn play:far
 extrn init_draw:far
@@ -23,8 +25,9 @@ extrn reset_game:far
 extrn reset_timer:far
 extrn inline_clear:far
 extrn player_mode:byte
+extrn chat_mode:far
 
-public player_name,other_player_name
+public player_name,other_player_name,menu
 
 .MODEL small
 .stack 64
@@ -470,7 +473,8 @@ recieve_invitaions proc
     mov sent_inv,0
     mov bl,temp_inv
     mov recieved_inv,bl
-    ;@mahmoud yehia
+    call chat_mode  
+    call menu      
     pop_all
     ret
 
@@ -634,7 +638,8 @@ wait_key proc
     mov recieved_inv,0
     mov bl,temp_inv
     mov sent_inv,bl
-    ;@mahmoud yehia
+    call chat_mode
+    call menu
     ret
 
     two_player_game:
@@ -661,6 +666,7 @@ wait_key proc
     call print_no_connection
     ret 
 wait_key endp
+
 
 start proc far
     mov ax,@data
