@@ -30,7 +30,7 @@ public chat_mode
 .MODEL small
 .STACK 100h
 .data
-    MESSAGE_OFFSET DW ?
+    chat_message_offset DW ?
     X_now              DB 0
     Y_now              DB 0
     X_ME           DB 3
@@ -47,7 +47,7 @@ public chat_mode
 Show_Message PROC
                  PUSH_ALL
                  mov      ah,9h
-                 mov      dx,MESSAGE_OFFSET
+                 mov      dx,chat_message_offset
                  int      21h
                  POP_ALL
                  RET
@@ -156,15 +156,15 @@ chat_mode proc FAR
 
                  MOV      Y_now,12
                  CALL     CURSOR_GOTO
-                 MOV      MESSAGE_OFFSET,OFFSET LINE
+                 MOV      chat_message_offset,OFFSET LINE
                  CALL     Show_Message
 
                  MOV      Y_now,1
                  MOV      X_now,1 
                  CALL     CURSOR_GOTO
-                 MOV      MESSAGE_OFFSET,OFFSET player_name
+                 MOV      chat_message_offset,OFFSET player_name
                  CALL     Show_Message
-                MOV      MESSAGE_OFFSET,OFFSET mrk
+                MOV      chat_message_offset,OFFSET mrk
                 CALL     Show_Message
 
 
@@ -172,9 +172,9 @@ chat_mode proc FAR
                  MOV      Y_now,13
                  CALL     CURSOR_GOTO
                 
-                 MOV      MESSAGE_OFFSET,OFFSET other_player_name
+                 MOV      chat_message_offset,OFFSET other_player_name
                  CALL     Show_Message
-                MOV      MESSAGE_OFFSET,OFFSET mrk
+                MOV      chat_message_offset,OFFSET mrk
                 CALL     Show_Message
 
                  MOV      X_ME,2
