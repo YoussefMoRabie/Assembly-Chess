@@ -136,6 +136,9 @@ valid db 1 ;input for macro to return 1 or 0 based on cell position
 marked db 0 
 EndGame db 0   ; if EndGame==0A --> white win
 
+from_cell db 0
+to_cell db 0
+
 WFT db 3  ; White Freezing Time
 BFT db 3 ; Black Freezing Time
 
@@ -452,7 +455,7 @@ player_movement endp
 send_inline_chat proc
   push_all
   ;sends inline chat letters
-  push ax
+  mov cx,ax
   ;send a chat letter
   mov dx , 3FDH		;Line Status Register
   In al , dx 			;Read Line Status
@@ -460,7 +463,7 @@ send_inline_chat proc
   JZ send_chat_done
 
   ;If empty put the invitaion in Transmit data register
-  pop ax
+  mov ax,cx
   mov dx , 3F8H		;Transmit data register
   out dx, al 
 
@@ -468,22 +471,41 @@ send_inline_chat proc
   pop_all
   ret
 send_inline_chat endp
+
 send_movement proc
   push_all
-  ;sends inline chat letters
-  mov cx, ax
-  ;send a chat letter
+  ;send from_cell and to_cell to the other player
+  
+  indicator_again:
   mov dx , 3FDH		;Line Status Register
   In al , dx 			;Read Line Status
   AND al , 00100000b
-  JZ send_movement_done
+  JZ indicator_again
 
-  ;If empty put the invitaion in Transmit data register
-  mov ax,cx
-  mov dx , 3F8H		;Transmit data register
-  out dx, al 
+  mov dx , 3F8H		
+  mov al,1
+  out dx,al
 
-  send_movement_done:
+  from_cell_again:
+  mov dx , 3FDH		;Line Status Register
+  In al , dx 			;Read Line Status
+  AND al , 00100000b
+  JZ from_cell_again
+ 
+  mov dx , 3F8H		
+  mov al,from_cell
+  out dx,al
+
+  to_cell_again:
+  mov dx , 3FDH		;Line Status Register
+  In al , dx 			;Read Line Status
+  AND al , 00100000b
+  JZ to_cell_again
+  
+  mov dx , 3F8H		
+  mov al,to_cell
+  out dx,al
+ 
   pop_all
   ret
 send_movement endp
@@ -502,60 +524,75 @@ recieve_game proc
   mov dx , 3F8H
   in al , dx 
   
-  ; ;other player pressed F4
-  ; cmp al,7
-  ; jne rec_not_menu
-  ; mov player_mode,3
-  ; ret
-  ; rec_not_menu:
+  ;other player pressed F4
+  cmp al,7
+  jne rec_not_menu
+  mov player_mode,3
+  ret
+  rec_not_menu:
 
-  ; cmp al,13
-  ; jne rec_not_enter
-  ; mov ah,1ch
-  ; rec_not_enter:
+  cmp al,13
+  jne rec_not_enter
+  mov ah,1ch
+  rec_not_enter:
 
-  ; cmp al,8
-  ; jne rec_not_back
-  ; mov ah,0eh
-  ; rec_not_back:
-  ; call other_inline
-  ; get_chat_done:
-    ; cmp player_mode,1
-    ; jne test_player_mode_2
-    ; cmp from_col_,8
-    ; jne distinition 
-    add al,'0'
-    call other_inline
-    sub al,'0'
-    mov dh,8
-    div dh
-    mov cx,0
-    mov cl,al
-    mov from_row_,cx
-    mov cl,ah
-    mov from_col_,cx
-    distinition:
+  cmp al,8
+  jne rec_not_back
+  mov ah,0eh
+  rec_not_back:
+  
+  ;other player is sending a move
+  cmp al,1
+  je recieve_movement
 
-    mov dx , 3F8H
-    in al , dx 
+  call other_inline
+  jmp End_recieve_game
 
-    
-    add al,'0'
-    call other_inline
-    sub al,'0'
+  recieve_movement:
+  ;we loop until we get the from_cell and to_cell from the other player 
+  recieve_from_again:
+  mov dx , 3FDH		;Line Status Register
+  in al , dx 
+  and al , 00000001b
+  Jz recieve_from_again
 
-    mov dh,8
-    div dh
-    mov cx,0
-    mov cl,al
-    mov to_row_,cx
-    mov cl,ah
-    mov to_col_,cx
-    ; call Change_B_place
-    ;TODO
-    test_player_mode_2:
-    ; cmp player_mode,2
-    ; je two_player_mode2
+  mov dx,3f8h
+  in al,dx
+
+  push ax
+  add al,48
+  call other_inline
+  pop ax
+
+
+  mov ah,0
+  mov dh,8
+  div dh
+  mov cx,0
+  mov cl,al
+  mov from_row_,cx
+  mov cl,ah
+  mov from_col_,cx
+
+  recieve_to_again:
+  mov dx , 3FDH		;Line Status Register
+  in al , dx 
+  and al , 00000001b
+  Jz recieve_to_again
+
+  mov dx,3f8h
+  in al,dx
+
+  mov ah,0
+  mov dh,8
+  div dh
+  mov cx,0
+  mov cl,al
+  mov to_row_,cx
+  mov cl,ah
+  mov to_col_,cx
+  
+  call Change_B_place
 
   End_recieve_game:
   pop_all
@@ -1467,10 +1504,8 @@ mov cl,0Ah
     mov cl,8
     mul cl
     add ax,from_col_
-    cmp player_mode,2
-    jne no_send_black
-    call send_movement
-    no_send_black:
+    mov from_cell,al
+
     add bx,ax
     mov al,[bx]
     mov cx,00h
@@ -1481,10 +1516,13 @@ mov cl,0Ah
     mov cx,8
     mul cx
     add ax,to_col_
+    mov to_cell,al
+
     cmp player_mode,2
     jne no_send_black_
     call send_movement
     no_send_black_:
+
     add bx,ax
     pop ax
     mov al,Bpiece_type
