@@ -31,13 +31,13 @@ public chat_mode
 .STACK 100h
 .data
     chat_message_offset DW ?
-    X_now              DB 0
-    Y_now              DB 0
-    X_ME           DB 3
-    Y_ME           DB 0
-    X_YOU          DB 4
-    Y_YOU          DB 13
-    LINE           DB "-----------------------------------------------------------------------------------$"
+    X_now              Dw 0
+    Y_now              Dw 0
+    X_ME           Dw 3
+    Y_ME           Dw 0
+    X_YOU          Dw 4
+    Y_YOU          Dw 13
+    LINE           DB "----------------------------------------------------------------------------$"
     YOU            DB "$"
     ME             DB "$"
     mrk             db ":$"
@@ -83,64 +83,7 @@ CURSOR_YOU PROC
                  POP_ALL
                  RET
 CURSOR_YOU ENDP
-; ;--------------------------------------------------------------------------
-; save_firstline PROC
-;      PUSH_ALL
-;     mov ax, ds
-;     mov es, ax
-;     lea di, firstline
-;     mov ax, 0b800h
-;     mov ds, ax
-;     mov ax, 0
-;     mov si, ax
-;     mov cx, 80
-;     rep movsw
-;     POP_ALL
-;     ret
-; save_firstline ENDP
 
-; restore_firstline PROC
-;      PUSH_ALL
-;     lea si, firstline
-;     mov ax, 0b800h
-;     mov es, ax
-;     mov ax, 0
-;     mov di, ax
-;     mov cx, 80
-;     rep movsw
-;      POP_ALL
-;     ret
-; restore_firstline ENDP
-
-; scroll_up PROC
-;      PUSH_ALL
-;     call save_firstline
-;     mov ah, 6               
-;     mov al, 1               ; number of lines to scroll
-;     mov bh, 0               ; attribute
-;     mov ch, 0               ; row top
-;     mov cl, 0               ; col left
-;     mov dh, 25              ; row bottom
-;     mov dl, 80              ; col right
-;     int 10h
-;      POP_ALL
-;     ret
-; scroll_up ENDP
-
-; scroll_down PROC
-;      PUSH_ALL
-;     mov ah, 7             
-;     mov al, 1               ; number of lines to scroll
-;     mov bh, 0               ; attribute
-;     mov ch, 0               ; row top
-;     mov cl, 0               ; col left
-;     mov dh, 25              ; row bottom
-;     mov dl, 80              ; col right
-;     int 10h
-;     call restore_firstline
-;      POP_ALL
-;     ret
-; scroll_down ENDP 
 ; --------------------------------------------------------------------------
 chat_mode proc FAR
     ;CHAT SCREEN
@@ -162,7 +105,7 @@ chat_mode proc FAR
                  MOV      Y_now,1
                  MOV      X_now,1 
                  CALL     CURSOR_GOTO
-                 
+
                  MOV      chat_message_offset,OFFSET player_name[2]
                  CALL     Show_Message_chat
 
@@ -199,8 +142,8 @@ chat_mode proc FAR
                  INT      16H
                  JZ       DONE1
 
-    ;KEY PRESSED, GET IT
-                 MOV      AH,0
+    ;K EY PRESSED, GET IT
+                MOV      AH,0
                  INT      16H
                 mov _ah,ah
                  CMP      AH,1CH
@@ -209,11 +152,28 @@ chat_mode proc FAR
                  MOV      X_ME,0
                  JMP      DONE_ENTER
     NOT_ENTER:   
-            
+                    ;move cursor
                  CALL     CURSOR_ME
                  CALL     CURSOR_GOTO
                  INC      X_ME
-
+                ;  cmp x_ME,80
+                ;  jne  goo
+                ;     cmp Y_ME,11
+                ;     jne gooo
+                ;     mov     ah, 06h ; scroll up function id.
+                ;     mov     al, 2   ; lines to scroll.
+                ;     mov     bh, 07  ; attribute for new lines.
+                ;     mov     cl, 0   ; upper col.
+                ;     mov     ch, 0   ; upper row.
+                ;     mov     dl, 80  ; lower col.
+                ;     mov     dh, 0   ; lower row.
+                ;     int     10h
+                ;     mov X_ME,0
+                ;     mov Y_ME,9
+                ;     CALL     CURSOR_ME
+                ;  CALL     CURSOR_GOTO
+                ; goo:
+                ; gooo:
                  MOV      AH,2
                  MOV      DL,AL
                  INT      21H
@@ -259,6 +219,7 @@ chat_mode proc FAR
                  INC      X_YOU
 
                  mov      ah, 2
+                 MOV      DL,AL
                  int      21h
     DONT_PRINT:
                 
