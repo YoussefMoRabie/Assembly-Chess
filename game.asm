@@ -1215,6 +1215,7 @@ mov cl,0Ah
       Jne notEndGame_r
       mov EndGame,1Ah
       call PrintWinner
+
       notEndGame_r:
       ;------------check if you eat black peice
       cmp al,00h
@@ -1286,8 +1287,10 @@ mov cl,0Ah
     call move_piece_
     call draw_selector1
 
-
-
+    cmp EndGame,1Ah
+    jne sskkiipp_
+ret
+sskkiipp_:
     push_all
           mov ah,2
        mov dx,1819h
@@ -1506,7 +1509,10 @@ mov cl,1Ah
     call move_piece
     call draw_selector2
 
-
+    cmp EndGame,0Ah
+    jne sskkiipp
+ret
+sskkiipp:
 
     push_all
           mov ah,2
