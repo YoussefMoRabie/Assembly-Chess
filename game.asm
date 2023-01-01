@@ -1182,14 +1182,30 @@ push ax
   mov ax,s1_row
  mov Wking_row,Al
  ;Get the destination cell you want to move the piece to
-   notKing: mov ax,s1_col
+   notKing: 
+   mov ax,s1_col
     mov to_col,ax
     mov ax,s1_row
     mov to_row,ax
     mov ax,0
     mov al,s1_color
     mov to_color,ax
-    ;---------Bonus
+    ;------------------------------------------Bonus promotion
+  mov cl,50h
+  cmp Wpiece_type,cl
+  jl notPawn__
+    mov cl,57h
+  cmp Wpiece_type,cl
+  jg notPawn__
+      mov cx,0
+      cmp to_row,cx
+      jne notPawn__
+  mov Wpiece_type,1Bh
+  mov ax,offset wQueen
+  mov wPiece,ax
+
+    notPawn__: 
+    ;---------Bonus frezzing
     push cx
     ; get index of destination cell in array to freeze it after moving 
       lea bx,boardMap
@@ -1264,6 +1280,7 @@ push ax
     add ax,to_col
     add bx,ax
     pop ax
+    mov al,Wpiece_type
     mov [bx],al
     mov cx ,to_col
     cmp cx, from_col_
@@ -1317,7 +1334,22 @@ mov cl,0Ah
     mov ax,0
     mov al,s2_color
     mov to_color_,ax
-        ;---------Bonus
+        ;------------------------------------------Bonus promotion
+  mov cl,40h
+  cmp Bpiece_type,cl
+  jl notPawn___
+    mov cl,47h
+  cmp Bpiece_type,cl
+  jg notPawn___
+      mov cx,7
+      cmp to_row_,cx
+      jne notPawn___
+  mov Bpiece_type,0Bh
+  mov ax,offset bQueen
+  mov bPiece,ax
+
+    notPawn___: 
+        ;---------Bonus freezing
     push cx
       ; get index of destination cell in array to freeze it after moving 
       lea bx,boardMap
@@ -1391,6 +1423,7 @@ mov cl,0Ah
     add ax,to_col_
     add bx,ax
     pop ax
+    mov al,Bpiece_type
     mov [bx],al
     mov cx ,to_col_
     cmp cx, from_col
