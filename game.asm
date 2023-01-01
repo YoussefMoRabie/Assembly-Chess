@@ -536,55 +536,6 @@ recieve_game proc
   mov ah,1ch
   rec_not_enter:
 
-<<<<<<< HEAD
-  ; cmp al,8
-  ; jne rec_not_back
-  ; mov ah,0eh
-  ; rec_not_back:
-  ; call other_inline
-  ; get_chat_done:
-    ; cmp player_mode,1
-    ; jne test_player_mode_2
-    cmp from_col_,8
-    jne distinition 
-    add al,'1'
-    call other_inline
-    sub al,'1'
-    ; push ax
-    ; add al,'5'
-    ; call other_inline
-    ; pop ax
-    mov dh,8
-    div dh
-    mov cx,0
-    mov cl,al
-    mov from_row_,cx
-    mov cl,ah
-    mov from_col_,cx
-    jmp End_recieve_game
-    distinition:
-    mov dx , 3F8H
-    in al , dx 
-
-
-    add al,'0'
-    call other_inline
-    sub al,'0'
-
-    mov dh,8
-    div dh
-    mov cx,0
-    mov cl,al
-    mov to_row_,cx
-    mov cl,ah
-    mov to_col_,cx
-    mov from_col_,8
-    ; call Change_B_place
-    ;TODO
-    test_player_mode_2:
-    ; cmp player_mode,2
-    ; je two_player_mode2
-=======
   cmp al,8
   jne rec_not_back
   mov ah,0eh
@@ -607,11 +558,6 @@ recieve_game proc
 
   mov dx,3f8h
   in al,dx
-
-  push ax
-  add al,48
-  call other_inline
-  pop ax
 
 
   mov ah,0
@@ -642,7 +588,6 @@ recieve_game proc
   mov to_col_,cx
   
   call Change_B_place
->>>>>>> fa55d20d5de0d1f37bbf41a5b0609e626475fc4e
 
   End_recieve_game:
   pop_all
