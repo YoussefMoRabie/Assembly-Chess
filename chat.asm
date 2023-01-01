@@ -37,21 +37,21 @@ public chat_mode
     Y_ME           DB 0
     X_YOU          DB 4
     Y_YOU          DB 13
-    LINE           DB "------------------------------------------------------------------------------------$"
+    LINE           DB "-----------------------------------------------------------------------------------$"
     YOU            DB "$"
     ME             DB "$"
     mrk             db ":$"
     _ah                 db ? 
 .code
 
-Show_Message PROC
+Show_Message_chat PROC
                  PUSH_ALL
                  mov      ah,9h
                  mov      dx,chat_message_offset
                  int      21h
                  POP_ALL
                  RET
-Show_Message ENDP
+Show_Message_chat ENDP
 
 CURSOR_GOTO PROC
                  PUSH_ALL
@@ -157,15 +157,17 @@ chat_mode proc FAR
                  MOV      Y_now,12
                  CALL     CURSOR_GOTO
                  MOV      chat_message_offset,OFFSET LINE
-                 CALL     Show_Message
+                 CALL     Show_Message_chat
 
                  MOV      Y_now,1
                  MOV      X_now,1 
                  CALL     CURSOR_GOTO
-                 MOV      chat_message_offset,OFFSET player_name
-                 CALL     Show_Message
+                 
+                 MOV      chat_message_offset,OFFSET player_name[2]
+                 CALL     Show_Message_chat
+
                 MOV      chat_message_offset,OFFSET mrk
-                CALL     Show_Message
+                CALL     Show_Message_chat
 
 
 
@@ -173,9 +175,9 @@ chat_mode proc FAR
                  CALL     CURSOR_GOTO
                 
                  MOV      chat_message_offset,OFFSET other_player_name
-                 CALL     Show_Message
+                 CALL     Show_Message_chat
                 MOV      chat_message_offset,OFFSET mrk
-                CALL     Show_Message
+                CALL     Show_Message_chat
 
                  MOV      X_ME,2
                  MOV     Y_ME,2

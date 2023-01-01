@@ -1,0 +1,478 @@
+Microsoft (R) Macro Assembler Version 5.10                  1/1/23 16:11:21
+
+                                                             Page     1-1
+
+
+				PUSH_ALL MACRO 
+				            PUSH AX
+				            PUSH BX
+				            PUSH CX
+				            PUSH DX
+				            PUSH SI
+				            PUSH DI
+				ENDM PUSH_ALL
+				
+				POP_ALL MACRO 
+				            POP DI
+				            POP SI
+				            POP DX
+				            POP CX
+				            POP BX
+				            POP AX
+				ENDM POP_ALL
+				
+				
+				;----------------------------------------------
+				-----------
+				extrn player_name:byte
+				extrn other_player_name:byte
+				extrn player_mode:byte
+				extrn menu:far
+				
+				public chat_mode
+				
+				;----------------------------------------------
+				--------
+				
+				.MODEL small
+				.STACK 100h
+				.data
+ 0000  0000			    chat_message_offset DW ?
+ 0002  00			    X_now              DB 0
+ 0003  00			    Y_now              DB 0
+ 0004  03			    X_ME           DB 3
+ 0005  00			    Y_ME           DB 0
+ 0006  04			    X_YOU          DB 4
+ 0007  0D			    Y_YOU          DB 13
+ 0008  2D 2D 2D 2D 2D 2D	    LINE           DB "------------------------
+				-----------------------------------------------
+				-------------$"
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+Microsoft (R) Macro Assembler Version 5.10                  1/1/23 16:11:21
+
+                                                             Page     1-2
+
+
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       2D 2D 2D 2D 2D 2D	
+       24			
+ 005D  24			    YOU            DB "$"
+ 005E  24			    ME             DB "$"
+ 005F  3A 24			    mrk             db ":$"
+ 0061  00			    _ah                 db ? 
+				.code
+				
+ 0000				Show_Message PROC
+				                 PUSH_ALL
+ 0000  50                    1	            PUSH AX 
+ 0001  53                    1	            PUSH BX 
+ 0002  51                    1	            PUSH CX 
+ 0003  52                    1	            PUSH DX 
+ 0004  56                    1	            PUSH SI 
+ 0005  57                    1	            PUSH DI 
+ 0006  B4 09			                 mov      ah,9h
+ 0008  8B 16 0000 R		                 mov      dx,chat_message_offse
+				t
+ 000C  CD 21			                 int      21h
+				                 POP_ALL
+ 000E  5F                    1	            POP DI 
+ 000F  5E                    1	            POP SI 
+ 0010  5A                    1	            POP DX 
+ 0011  59                    1	            POP CX 
+ 0012  5B                    1	            POP BX 
+ 0013  58                    1	            POP AX 
+ 0014  C3			                 RET
+ 0015				Show_Message ENDP
+				
+ 0015				CURSOR_GOTO PROC
+				                 PUSH_ALL
+ 0015  50                    1	            PUSH AX 
+ 0016  53                    1	            PUSH BX 
+ 0017  51                    1	            PUSH CX 
+ 0018  52                    1	            PUSH DX 
+ 0019  56                    1	            PUSH SI 
+ 001A  57                    1	            PUSH DI 
+ 001B  B4 02			                 mov      ah,02h
+ 001D  B7 00			                 mov      bh,0
+ 001F  8A 16 0002 R		                 mov      dl,X_now
+ 0023  8A 36 0003 R		                 mov      dh,Y_now
+ 0027  CD 10			                 int      10h
+				                 POP_ALL
+ 0029  5F                    1	            POP DI 
+ 002A  5E                    1	            POP SI 
+ 002B  5A                    1	            POP DX 
+ 002C  59                    1	            POP CX 
+ 002D  5B                    1	            POP BX 
+ 002E  58                    1	            POP AX 
+ 002F  C3			                 RET
+ 0030				CURSOR_GOTO ENDP
+Microsoft (R) Macro Assembler Version 5.10                  1/1/23 16:11:21
+
+                                                             Page     1-3
+
+
+				
+ 0030				CURSOR_ME PROC
+				                 PUSH_ALL
+ 0030  50                    1	            PUSH AX 
+ 0031  53                    1	            PUSH BX 
+ 0032  51                    1	            PUSH CX 
+ 0033  52                    1	            PUSH DX 
+ 0034  56                    1	            PUSH SI 
+ 0035  57                    1	            PUSH DI 
+ 0036  8A 1E 0004 R		                 MOV      BL,X_ME
+ 003A  88 1E 0002 R		                 MOV      X_now,BL
+ 003E  8A 1E 0005 R		                 MOV      BL,Y_ME
+ 0042  88 1E 0003 R		                 MOV      Y_now,BL
+				                 POP_ALL
+ 0046  5F                    1	            POP DI 
+ 0047  5E                    1	            POP SI 
+ 0048  5A                    1	            POP DX 
+ 0049  59                    1	            POP CX 
+ 004A  5B                    1	            POP BX 
+ 004B  58                    1	            POP AX 
+ 004C  C3			                 RET
+ 004D				CURSOR_ME ENDP
+				
+ 004D				CURSOR_YOU PROC
+				                 PUSH_ALL
+ 004D  50                    1	            PUSH AX 
+ 004E  53                    1	            PUSH BX 
+ 004F  51                    1	            PUSH CX 
+ 0050  52                    1	            PUSH DX 
+ 0051  56                    1	            PUSH SI 
+ 0052  57                    1	            PUSH DI 
+ 0053  8A 1E 0006 R		                 MOV      BL,X_YOU
+ 0057  88 1E 0002 R		                 MOV      X_now,BL
+ 005B  8A 1E 0007 R		                 MOV      BL,Y_YOU
+ 005F  88 1E 0003 R		                 MOV      Y_now,BL
+				                 POP_ALL
+ 0063  5F                    1	            POP DI 
+ 0064  5E                    1	            POP SI 
+ 0065  5A                    1	            POP DX 
+ 0066  59                    1	            POP CX 
+ 0067  5B                    1	            POP BX 
+ 0068  58                    1	            POP AX 
+ 0069  C3			                 RET
+ 006A				CURSOR_YOU ENDP
+				; ;--------------------------------------------
+				------------------------------
+				; save_firstline PROC
+				;      PUSH_ALL
+				;     mov ax, ds
+				;     mov es, ax
+				;     lea di, firstline
+				;     mov ax, 0b800h
+				;     mov ds, ax
+				;     mov ax, 0
+Microsoft (R) Macro Assembler Version 5.10                  1/1/23 16:11:21
+
+                                                             Page     1-4
+
+
+				;     mov si, ax
+				;     mov cx, 80
+				;     rep movsw
+				;     POP_ALL
+				;     ret
+				; save_firstline ENDP
+				
+				; restore_firstline PROC
+				;      PUSH_ALL
+				;     lea si, firstline
+				;     mov ax, 0b800h
+				;     mov es, ax
+				;     mov ax, 0
+				;     mov di, ax
+				;     mov cx, 80
+				;     rep movsw
+				;      POP_ALL
+				;     ret
+				; restore_firstline ENDP
+				
+				; scroll_up PROC
+				;      PUSH_ALL
+				;     call save_firstline
+				;     mov ah, 6               
+				;     mov al, 1               ; number of lines
+				 to scroll
+				;     mov bh, 0               ; attribute
+				;     mov ch, 0               ; row top
+				;     mov cl, 0               ; col left
+				;     mov dh, 25              ; row bottom
+				;     mov dl, 80              ; col right
+				;     int 10h
+				;      POP_ALL
+				;     ret
+				; scroll_up ENDP
+				
+				; scroll_down PROC
+				;      PUSH_ALL
+				;     mov ah, 7             
+				;     mov al, 1               ; number of lines
+				 to scroll
+				;     mov bh, 0               ; attribute
+				;     mov ch, 0               ; row top
+				;     mov cl, 0               ; col left
+				;     mov dh, 25              ; row bottom
+				;     mov dl, 80              ; col right
+				;     int 10h
+				;     call restore_firstline
+				;      POP_ALL
+				;     ret
+				; scroll_down ENDP 
+				; ---------------------------------------------
+				-----------------------------
+ 006A				chat_mode proc FAR
+Microsoft (R) Macro Assembler Version 5.10                  1/1/23 16:11:21
+
+                                                             Page     1-5
+
+
+				    ;CHAT SCREEN
+ 006A  B4 00			                 MOV      AH,0
+ 006C  B0 03			                 MOV      AL,3
+ 006E  CD 10			                 INT      10H
+				
+				                 
+				
+				
+				
+ 0070  C6 06 0002 R 00		                 MOV      X_now,0
+				
+ 0075  C6 06 0003 R 0C		                 MOV      Y_now,12
+ 007A  E8 0015 R		                 CALL     CURSOR_GOTO
+ 007D  C7 06 0000 R 0008 R	                 MOV      chat_message_offset,O
+				FFSET LINE
+ 0083  E8 0000 R		                 CALL     Show_Message
+				
+ 0086  C6 06 0003 R 01		                 MOV      Y_now,1
+ 008B  C6 06 0002 R 01		                 MOV      X_now,1 
+ 0090  E8 0015 R		                 CALL     CURSOR_GOTO
+ 0093  C7 06 0000 R 0000 E	                 MOV      chat_message_offset,O
+				FFSET player_name
+ 0099  E8 0000 R		                 CALL     Show_Message
+ 009C  C7 06 0000 R 005F R	                MOV      chat_message_offset,OF
+				FSET mrk
+ 00A2  E8 0000 R		                CALL     Show_Message
+				
+				
+				
+ 00A5  C6 06 0003 R 0D		                 MOV      Y_now,13
+ 00AA  E8 0015 R		                 CALL     CURSOR_GOTO
+				                
+ 00AD  C7 06 0000 R 0000 E	                 MOV      chat_message_offset,O
+				FFSET other_player_name
+ 00B3  E8 0000 R		                 CALL     Show_Message
+ 00B6  C7 06 0000 R 005F R	                MOV      chat_message_offset,OF
+				FSET mrk
+ 00BC  E8 0000 R		                CALL     Show_Message
+				
+ 00BF  C6 06 0004 R 02		                 MOV      X_ME,2
+ 00C4  C6 06 0005 R 02		                 MOV     Y_ME,2
+ 00C9  C6 06 0006 R 02		                 MOV      X_YOU,2
+ 00CE  C6 06 0007 R 0E		                 MOV     Y_YOU,14
+				
+ 00D3				    CHAT:        
+				 
+				    ;Check that Transmitter Holding Register is
+				 Empty
+ 00D3  BA 03FD			                 mov      dx , 3FDH            
+				         ; Line Status Register
+				    
+ 00D6  EC			                 In       al , dx              
+				         ;Read Line Status
+ 00D7  24 20			                 AND      al , 00100000b
+Microsoft (R) Macro Assembler Version 5.10                  1/1/23 16:11:21
+
+                                                             Page     1-6
+
+
+ 00D9  75 00			                 JNZ      SEND_CHECK
+				
+				    ;If empty put the VALUE in Transmit data re
+				gister
+ 00DB				    SEND_CHECK:  
+ 00DB  B4 01			                 MOV      AH,1
+ 00DD  CD 16			                 INT      16H
+ 00DF  74 34			                 JZ       DONE1
+				
+				    ;KEY PRESSED, GET IT
+ 00E1  B4 00			                 MOV      AH,0
+ 00E3  CD 16			                 INT      16H
+ 00E5  88 26 0061 R		                mov _ah,ah
+ 00E9  80 FC 1C			                 CMP      AH,1CH
+ 00EC  75 0C			                 JNE      NOT_ENTER
+ 00EE  FE 06 0005 R		                 INC      Y_ME
+ 00F2  C6 06 0004 R 00		                 MOV      X_ME,0
+ 00F7  EB 11 90			                 JMP      DONE_ENTER
+ 00FA				    NOT_ENTER:   
+				            
+ 00FA  E8 0030 R		                 CALL     CURSOR_ME
+ 00FD  E8 0015 R		                 CALL     CURSOR_GOTO
+ 0100  FE 06 0004 R		                 INC      X_ME
+				
+ 0104  B4 02			                 MOV      AH,2
+ 0106  8A D0			                 MOV      DL,AL
+ 0108  CD 21			                 INT      21H
+				
+ 010A				    DONE_ENTER: 
+				
+ 010A  80 3E 0061 R 3D		                cmp _ah,3dh  
+ 010F  74 36			                je go_to_menu 
+ 0111  BA 03F8			                 mov      dx , 3F8H            
+				         ; Transmit data register
+ 0114  EE			                 out      dx , al
+				
+				               
+				
+				                
+				
+ 0115				    DONE1:       
+				    
+				    ;RECIEVE
+				    ;Check that Data Ready
+ 0115  BA 03FD			                 mov      dx , 3FDH            
+				         ; Line Status Register
+ 0118  EC			                 in       al , dx
+ 0119  24 01			                 AND      al , 1
+ 011B  74 28			                 JZ       DONT_PRINT
+				
+				    ;If Ready read the VALUE in Receive data re
+				gister
+ 011D  BA 03F8			                 mov      dx , 03F8H
+ 0120  EC			                 in       al , dx
+Microsoft (R) Macro Assembler Version 5.10                  1/1/23 16:11:21
+
+                                                             Page     1-7
+
+
+ 0121  8A D0			                 mov      DL , al
+				
+ 0123  3C 07			                 cmp al,7 
+ 0125  74 26			                 je go_to_menu2
+				
+				
+ 0127  3C 0D			                 CMP      aL,13
+ 0129  75 0C			                 JNE      NOT_ENTER2
+ 012B  FE 06 0007 R		                 INC      Y_YOU
+ 012F  C6 06 0006 R 00		                 MOV      X_YOU,0
+ 0134  EB 0F 90			                 JMP      DONT_PRINT
+ 0137				    NOT_ENTER2:  
+				
+ 0137  E8 004D R		                 CALL     CURSOR_YOU
+ 013A  E8 0015 R		                 CALL     CURSOR_GOTO
+ 013D  FE 06 0006 R		                 INC      X_YOU
+				
+ 0141  B4 02			                 mov      ah, 2
+ 0143  CD 21			                 int      21h
+ 0145				    DONT_PRINT:
+				                
+ 0145  EB 8C			                JMP      CHAT
+ 0147				    go_to_menu:
+ 0147  BA 03F8			                mov dx,3f8h
+ 014A  B0 07			                mov al,7
+ 014C  EE			                out dx,al
+				 
+ 014D				   go_to_menu2:             
+ 014D  CB			ret
+ 014E				chat_mode endp
+				end
+
+Microsoft (R) Macro Assembler Version 5.10                  1/1/23 16:11:21
+
+                                                             Symbols-1
+
+
+Macros:
+
+		N a m e			Lines
+
+POP_ALL  . . . . . . . . . . . .  	   6
+PUSH_ALL . . . . . . . . . . . .  	   6
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+DGROUP . . . . . . . . . . . . .  	GROUP
+  _DATA  . . . . . . . . . . . .  	0062	WORD	PUBLIC	'DATA'
+  STACK  . . . . . . . . . . . .  	0100	PARA	STACK	'STACK'
+_TEXT  . . . . . . . . . . . . .  	014E	WORD	PUBLIC	'CODE'
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+CHAT . . . . . . . . . . . . . .  	L NEAR	00D3	_TEXT
+CHAT_MESSAGE_OFFSET  . . . . . .  	L WORD	0000	_DATA
+CHAT_MODE  . . . . . . . . . . .  	F PROC	006A	_TEXT	Global	Length = 00E4
+CURSOR_GOTO  . . . . . . . . . .  	N PROC	0015	_TEXT	Length = 001B
+CURSOR_ME  . . . . . . . . . . .  	N PROC	0030	_TEXT	Length = 001D
+CURSOR_YOU . . . . . . . . . . .  	N PROC	004D	_TEXT	Length = 001D
+
+DONE1  . . . . . . . . . . . . .  	L NEAR	0115	_TEXT
+DONE_ENTER . . . . . . . . . . .  	L NEAR	010A	_TEXT
+DONT_PRINT . . . . . . . . . . .  	L NEAR	0145	_TEXT
+
+GO_TO_MENU . . . . . . . . . . .  	L NEAR	0147	_TEXT
+GO_TO_MENU2  . . . . . . . . . .  	L NEAR	014D	_TEXT
+
+LINE . . . . . . . . . . . . . .  	L BYTE	0008	_DATA
+
+ME . . . . . . . . . . . . . . .  	L BYTE	005E	_DATA
+MENU . . . . . . . . . . . . . .  	L FAR 	0000		External
+MRK  . . . . . . . . . . . . . .  	L BYTE	005F	_DATA
+
+NOT_ENTER  . . . . . . . . . . .  	L NEAR	00FA	_TEXT
+NOT_ENTER2 . . . . . . . . . . .  	L NEAR	0137	_TEXT
+
+OTHER_PLAYER_NAME  . . . . . . .  	V BYTE	0000		External
+
+PLAYER_MODE  . . . . . . . . . .  	V BYTE	0000		External
+PLAYER_NAME  . . . . . . . . . .  	V BYTE	0000		External
+
+SEND_CHECK . . . . . . . . . . .  	L NEAR	00DB	_TEXT
+SHOW_MESSAGE . . . . . . . . . .  	N PROC	0000	_TEXT	Length = 0015
+
+X_ME . . . . . . . . . . . . . .  	L BYTE	0004	_DATA
+X_NOW  . . . . . . . . . . . . .  	L BYTE	0002	_DATA
+Microsoft (R) Macro Assembler Version 5.10                  1/1/23 16:11:21
+
+                                                             Symbols-2
+
+
+X_YOU  . . . . . . . . . . . . .  	L BYTE	0006	_DATA
+
+YOU  . . . . . . . . . . . . . .  	L BYTE	005D	_DATA
+Y_ME . . . . . . . . . . . . . .  	L BYTE	0005	_DATA
+Y_NOW  . . . . . . . . . . . . .  	L BYTE	0003	_DATA
+Y_YOU  . . . . . . . . . . . . .  	L BYTE	0007	_DATA
+
+@CODE  . . . . . . . . . . . . .  	TEXT  _TEXT		
+@CODESIZE  . . . . . . . . . . .  	TEXT  0		
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@DATASIZE  . . . . . . . . . . .  	TEXT  0		
+@FILENAME  . . . . . . . . . . .  	TEXT  chat		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+_AH  . . . . . . . . . . . . . .  	L BYTE	0061	_DATA
+
+
+    272 Source  Lines
+    320 Total   Lines
+     49 Symbols
+
+  48012 + 446959 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
