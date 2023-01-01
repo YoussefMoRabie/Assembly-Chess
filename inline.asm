@@ -96,6 +96,8 @@ show_player_name proc far
     mov inline_y,11
     call inline_move_cursor
     int 21h
+
+    mov dx,offset inline_line
     mov inline_y,22
     call inline_move_cursor
     int 21h
@@ -104,6 +106,7 @@ show_player_name proc far
     mov inline_y,1
     call inline_move_cursor 
     int 21h
+
     mov dx,offset other_player_name
     mov inline_y,12
     call inline_move_cursor 

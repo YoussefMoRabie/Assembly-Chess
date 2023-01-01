@@ -3052,7 +3052,10 @@ check_bking_threat endp
 ;-----------------------------------------------------------------------------------------------------------------------------------------
 play proc far
     call init_draw
+    cmp player_mode,0
+    je no_inline_names
     call show_player_name
+    no_inline_names:
     call PowerUp
     playing:
         call Timer
