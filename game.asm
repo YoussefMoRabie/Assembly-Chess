@@ -1255,6 +1255,43 @@ mov cl,0Ah
     call move_piece_
     call draw_selector1
 
+
+
+    push_all
+          mov ah,2
+       mov dx,1819h
+       int 10h 
+       mov ah, 9
+      mov dx,offset clean_threat
+       int 21h
+        call check_wking_threat
+    mov cl,1
+    cmp W_threat,1
+    jne try_black_threat_r
+        ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset W_threat_MSG
+    int 21h
+    mov W_threat,0
+    try_black_threat_r:
+      call check_bking_threat
+    mov cl,1
+    cmp B_threat,1
+    jne nothreat_r
+        ; mov cursor
+     mov ah,2
+     mov dx,1819h
+     int 10h 
+     mov ah, 9
+    mov dx,offset B_threat_MSG
+    int 21h
+    mov B_threat,0
+    nothreat_r:
+    pop_all
+
 ret
 move_black endp
 ;-------------------------------------------------
