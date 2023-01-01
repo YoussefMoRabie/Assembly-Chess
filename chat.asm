@@ -28,7 +28,7 @@ public chat_mode
 
 .MODEL small
 .data
-    MESSAGE_OFFSET DW ?
+    chat_message_offset DW ?
     X_now              DB 0
     Y_now              DB 0
     X_ME           DB 3
@@ -41,12 +41,14 @@ public chat_mode
 .code
 
 Show_Message_chat PROC
+Show_Message_chat PROC
                  PUSH_ALL
                  mov      ah,9h
-                 mov      dx,MESSAGE_OFFSET
+                 mov      dx,chat_message_offset
                  int      21h
                  POP_ALL
                  RET
+Show_Message_chat ENDP
 Show_Message_chat ENDP
 
 CURSOR_GOTO PROC
@@ -148,26 +150,28 @@ chat_mode proc FAR
 
                  MOV      Y_now,12
                  CALL     CURSOR_GOTO
-                 MOV      MESSAGE_OFFSET,OFFSET LINE
+                 MOV      chat_message_offset,OFFSET LINE
                  CALL     Show_Message_chat
 
                  MOV      Y_now,1
                  MOV      X_now,1 
                  CALL     CURSOR_GOTO
-                 MOV      MESSAGE_OFFSET,OFFSET player_name
+                 
+                 MOV      chat_message_offset,OFFSET player_name[2]
                  CALL     Show_Message_chat
-                 MOV      MESSAGE_OFFSET,OFFSET mrk
-                 CALL     Show_Message_chat
+
+                MOV      chat_message_offset,OFFSET mrk
+                CALL     Show_Message_chat
 
 
 
                  MOV      Y_now,13
                  CALL     CURSOR_GOTO
                 
-                 MOV      MESSAGE_OFFSET,OFFSET other_player_name
+                 MOV      chat_message_offset,OFFSET other_player_name
                  CALL     Show_Message_chat
-                 MOV      MESSAGE_OFFSET,OFFSET mrk
-                 CALL     Show_Message_chat
+                MOV      chat_message_offset,OFFSET mrk
+                CALL     Show_Message_chat
 
                  MOV      X_ME,2
                  MOV     Y_ME,2
@@ -207,9 +211,16 @@ chat_mode proc FAR
                  MOV      DL,AL
                  INT      21H
 
-    DONE_ENTER:  
+    DONE_ENTER: 
+
+                cmp _ah,3dh  
+                je go_to_menu 
                  mov      dx , 3F8H                     ; Transmit data register
                  out      dx , al
+
+               
+
+                
 
     DONE1:       
     
@@ -243,15 +254,13 @@ chat_mode proc FAR
                  mov      ah, 2
                  int      21h
     DONT_PRINT:
-                cmp _ah,3dh
-                je go_to_menu
-                JMP CHAT
-
+                
+                JMP      CHAT
     go_to_menu:
                 mov dx,3f8h
                 mov al,7
                 out dx,al
-
+ 
    go_to_menu2:             
 ret
 chat_mode endp
