@@ -112,7 +112,11 @@ show_player_name proc far
     call inline_move_cursor 
     int 21h
     
-    mov inline_y,2
+    mov inline_x, 25
+    mov inline_y, 2
+
+    mov inline_x2, 25
+    mov inline_y2, 13
     pop_all
     ret
 show_player_name endp
