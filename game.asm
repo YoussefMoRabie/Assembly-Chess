@@ -522,11 +522,15 @@ recieve_game proc
   ; get_chat_done:
     ; cmp player_mode,1
     ; jne test_player_mode_2
-    ; cmp from_col_,8
-    ; jne distinition 
-    add al,'0'
+    cmp from_col_,8
+    jne distinition 
+    add al,'1'
     call other_inline
-    sub al,'0'
+    sub al,'1'
+    ; push ax
+    ; add al,'5'
+    ; call other_inline
+    ; pop ax
     mov dh,8
     div dh
     mov cx,0
@@ -534,12 +538,12 @@ recieve_game proc
     mov from_row_,cx
     mov cl,ah
     mov from_col_,cx
+    jmp End_recieve_game
     distinition:
-
     mov dx , 3F8H
     in al , dx 
 
-    
+
     add al,'0'
     call other_inline
     sub al,'0'
@@ -551,6 +555,7 @@ recieve_game proc
     mov to_row_,cx
     mov cl,ah
     mov to_col_,cx
+    mov from_col_,8
     ; call Change_B_place
     ;TODO
     test_player_mode_2:
@@ -2692,6 +2697,21 @@ delete_locker endp
 ;------------------------------------------------------- PowerUp bonus 1-------------------------------------------------------------------
 PowerUp proc 
 PUSH_ALL
+    cmp player_mode,2
+    jne skip_recieve_star
+    start_recieve_star:
+    mov dx , 3FDH		;Line Status Register
+    in al , dx 
+    and al , 00000001b
+    Jnz recieve_star_con
+    jmp start_recieve_star
+    recieve_star_con:
+    ;If Ready read the VALUE in Receive data register
+    mov dx , 3F8H
+    in al , dx 
+    mov ah,0
+    jmp skip_send_star
+    skip_recieve_star:
 ;get time.
      mov  ah, 2ch
      int  21h
@@ -2703,11 +2723,16 @@ PUSH_ALL
      add ah ,16
      mov al,ah
      mov ah,0
+    cmp player_mode,1
+    jne skip_send_star
+    call send_movement
+    skip_send_star:
 ;set star in boardMap
      mov si,offset boardMap
      add si,ax
      mov cl,0AAh
      mov[si],cl
+
 ;get star col,row.
      mov dh,8
      div dh
