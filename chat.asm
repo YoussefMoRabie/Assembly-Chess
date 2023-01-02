@@ -144,9 +144,9 @@ chat_mode proc FAR
         CALL     Show_Message_chat
 
         MOV      X_ME,1
-        MOV     Y_ME,1
+        MOV      Y_ME,1
         MOV      X_YOU,1
-        MOV     Y_YOU,14
+        MOV      Y_YOU,14
 
     CHAT:        
     ;Check that Transmitter Holding Register is Empty
@@ -154,7 +154,7 @@ chat_mode proc FAR
 
         In       al , dx                       ;Read Line Status
         AND      al , 00100000b
-        JZ      DONE1
+        JZ       DONE1
 
     ;If empty put the VALUE in Transmit data register
     SEND_CHECK:  
