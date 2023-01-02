@@ -161,10 +161,15 @@ chat_mode proc FAR
                  MOV      AH,1
                  INT      16H
                  JZ       DONE1
-
+                
+               
     ;K EY PRESSED, GET IT
                  MOV      AH,0
                  INT      16H
+                 cmp ah,3dh  
+                 jne not_menu_from_chat
+                 jmp go_to_menu 
+                 not_menu_from_chat:
                  mov      dx , 3F8H                     ; Transmit data register
                  out      dx , al
                  CMP      AH,1CH
@@ -193,13 +198,10 @@ chat_mode proc FAR
                  INT      21H
 
     DONE_ENTER: 
+     jmp DONE1
 
-        cmp ah,3dh  
-        je go_to_menu 
-        jmp DONE1
-
-        full_chat_me:
-            call scroll_up_me   
+    full_chat_me:
+        call scroll_up_me   
 
     DONE1:       
     
