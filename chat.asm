@@ -241,8 +241,8 @@ chat_mode proc FAR
                  CMP      aL,13
                  JNE      NOT_ENTER2
                  INC      Y_YOU
-                 cmp Y_YOU,25
-                 je full_chat_you
+                cmp       Y_YOU,25
+                 je      full_chat_you
 
                  MOV      X_YOU,0
                  JMP      DONT_PRINT
@@ -257,8 +257,9 @@ chat_mode proc FAR
                     inc Y_YOU
                     cmp Y_YOU,25
                     je full_chat_you
-
                     NOT_END_OF_LINE_YOU:
+
+
                  mov      ah, 2
                  MOV      DL,AL
                  int      21h
