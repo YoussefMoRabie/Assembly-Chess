@@ -927,6 +927,7 @@ Select_W proc ;Select White piece to move it
         ret
     Highlighted:   
    ; mov cursor
+ 
      mov ah,2
      mov dx,1819h
      int 10h 
@@ -934,6 +935,8 @@ Select_W proc ;Select White piece to move it
     mov dx,offset clean_threat
     int 21h
     call Change_W_place  ;move  White piece
+      cmp EndGame,0Ah
+   je nothreat
     call check_wking_threat
     mov cl,1
     cmp W_threat,1
@@ -960,7 +963,8 @@ Select_W proc ;Select White piece to move it
     int 21h
     mov B_threat,0
     ;updating the opponent's drawn valid cells (if exist) after my move
-    nothreat: mov cx,8
+    nothreat:
+     mov cx,8
     cmp from_col_,cx
     je returnn
     mov al,piece_type
@@ -1646,6 +1650,8 @@ Select_B proc ;Select Black piece to move it
       mov dx,offset clean_threat
        int 21h
         call Change_B_place   ;move  Black piece
+              cmp EndGame,1Ah
+          je nothreat_
         call check_wking_threat
     mov cl,1
     cmp W_threat,1
