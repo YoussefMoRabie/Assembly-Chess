@@ -35,39 +35,41 @@ public chat_mode
     Y_ME           DB 0
     X_YOU          DB 4
     Y_YOU          DB 13
-    LINE           DB "------------------------------------------------------------------------------------$"
-    mrk            db ":$"
-    _ah            db ? 
+    LINE           DB "--------------------------------------------------------------------------------$"
 .code
-ME_clear proc 
+scroll_up_me proc 
     ;clears the chat and return the cursor to the start of it
-    mov X_ME,1
-    mov Y_ME,1
+    push_all
+    mov X_ME,0
+    mov Y_ME,10
 
-    mov ax,0600h
+    mov ax,0602h
     mov bh,7
     mov cl,0
     mov ch,1
     mov dl,79
     mov dh,11
     int 10h
+    pop_all
     ret
-ME_clear endp
+scroll_up_me endp
 
-YOU_clear proc 
+scroll_up_you proc 
     ;clears the chat and return the cursor to the start of it
-    mov X_YOU,1
-    mov Y_YOU,14
+    push_all
+    mov X_YOU,0
+    mov Y_YOU,23
 
-    mov ax,0600h
+    mov ax,0602h
     mov bh,7
     mov cl,0
     mov ch,14
     mov dl,79
     mov dh,24
     int 10h
+    pop_all
     ret
-YOU_clear endp
+scroll_up_you endp
 
 Show_Message_chat PROC
                  PUSH_ALL
@@ -117,6 +119,10 @@ chat_mode proc FAR
                  MOV      AL,3
                  INT      10H
 
+                 mov ch, 32
+                mov ah, 1
+                int 10h 
+
                  MOV      X_now,0
 
                  MOV      Y_now,12
@@ -131,19 +137,12 @@ chat_mode proc FAR
                  MOV      chat_message_offset,OFFSET player_name[2]
                  CALL     Show_Message_chat
 
-                ; MOV      chat_message_offset,OFFSET mrk
-                ; CALL     Show_Message_chat
-
-
-
                  MOV      Y_now,13
                  CALL     CURSOR_GOTO
                 
                  MOV      chat_message_offset,OFFSET other_player_name
                  CALL     Show_Message_chat
-                ; MOV      chat_message_offset,OFFSET mrk
-                ; CALL     Show_Message_chat
-
+              
                  MOV      X_ME,1
                  MOV     Y_ME,1
                  MOV      X_YOU,1
@@ -164,9 +163,10 @@ chat_mode proc FAR
                  JZ       DONE1
 
     ;K EY PRESSED, GET IT
-                MOV      AH,0
+                 MOV      AH,0
                  INT      16H
-                 mov      _ah,ah
+                 mov      dx , 3F8H                     ; Transmit data register
+                 out      dx , al
                  CMP      AH,1CH
                  JNE      NOT_ENTER
                  INC      Y_ME
@@ -175,8 +175,8 @@ chat_mode proc FAR
 
                  MOV      X_ME,0
                  JMP      DONE_ENTER
-    NOT_ENTER:   
-                    ;move cursor
+    NOT_ENTER:  
+                ;move cursor
                  CALL     CURSOR_ME
                  CALL     CURSOR_GOTO
                  INC      X_ME
@@ -187,38 +187,19 @@ chat_mode proc FAR
                     cmp Y_ME,12
                  je full_chat_me
                   NOT_END_OF_LINE:
-                ;  cmp x_ME,80
-                ;  jne  goo
-                ;     cmp Y_ME,11
-                ;     jne gooo
-                ;     mov     ah, 06h ; scroll up function id.
-                ;     mov     al, 2   ; lines to scroll.
-                ;     mov     bh, 07  ; attribute for new lines.
-                ;     mov     cl, 0   ; upper col.
-                ;     mov     ch, 0   ; upper row.
-                ;     mov     dl, 80  ; lower col.
-                ;     mov     dh, 0   ; lower row.
-                ;     int     10h
-                ;     mov X_ME,0
-                ;     mov Y_ME,9
-                ;     CALL     CURSOR_ME
-                ;  CALL     CURSOR_GOTO
-                ; goo:
-                ; gooo:
+                
                  MOV      AH,2
                  MOV      DL,AL
                  INT      21H
 
     DONE_ENTER: 
 
-                cmp _ah,3dh  
-                je go_to_menu 
-                 mov      dx , 3F8H                     ; Transmit data register
-                 out      dx , al
+        cmp ah,3dh  
+        je go_to_menu 
         jmp DONE1
 
         full_chat_me:
-             call ME_clear   
+            call scroll_up_me   
 
     DONE1:       
     
@@ -263,9 +244,12 @@ chat_mode proc FAR
                  MOV      DL,AL
                  int      21h
     DONT_PRINT:
-                full_chat_you:
-                call YOU_clear
+                jmp dont_clear_you
 
+                full_chat_you:
+                call scroll_up_you
+
+                dont_clear_you:
                 JMP      CHAT
     go_to_menu:
                 mov dx,3f8h
