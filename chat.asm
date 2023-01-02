@@ -114,83 +114,83 @@ CURSOR_YOU ENDP
 
 ; --------------------------------------------------------------------------
 chat_mode proc FAR
-    ;CHAT SCREEN
-                 MOV      AH,0
-                 MOV      AL,3
-                 INT      10H
+        ;CHAT SCREEN
+        MOV      AH,0
+        MOV      AL,3
+        INT      10H
 
-                 mov ch, 32
-                mov ah, 1
-                int 10h 
+        mov ch, 32
+        mov ah, 1
+        int 10h 
 
-                 MOV      X_now,0
+        MOV      X_now,0
 
-                 MOV      Y_now,12
-                 CALL     CURSOR_GOTO
-                 MOV      chat_message_offset,OFFSET LINE
-                 CALL     Show_Message_chat
+        MOV      Y_now,12
+        CALL     CURSOR_GOTO
+        MOV      chat_message_offset,OFFSET LINE
+        CALL     Show_Message_chat
 
-                 MOV      Y_now,0
-                 MOV      X_now,0 
-                 CALL     CURSOR_GOTO
+        MOV      Y_now,0
+        MOV      X_now,0 
+        CALL     CURSOR_GOTO
 
-                 MOV      chat_message_offset,OFFSET player_name[2]
-                 CALL     Show_Message_chat
+        MOV      chat_message_offset,OFFSET player_name[2]
+        CALL     Show_Message_chat
 
-                 MOV      Y_now,13
-                 CALL     CURSOR_GOTO
-                
-                 MOV      chat_message_offset,OFFSET other_player_name
-                 CALL     Show_Message_chat
-              
-                 MOV      X_ME,1
-                 MOV     Y_ME,1
-                 MOV      X_YOU,1
-                 MOV     Y_YOU,14
+        MOV      Y_now,13
+        CALL     CURSOR_GOTO
+
+        MOV      chat_message_offset,OFFSET other_player_name
+        CALL     Show_Message_chat
+
+        MOV      X_ME,1
+        MOV     Y_ME,1
+        MOV      X_YOU,1
+        MOV     Y_YOU,14
 
     CHAT:        
     ;Check that Transmitter Holding Register is Empty
-                 mov      dx , 3FDH                     ; Line Status Register
-    
-                 In       al , dx                       ;Read Line Status
-                 AND      al , 00100000b
-                 JZ      DONE1
+        mov      dx , 3FDH                     ; Line Status Register
+
+        In       al , dx                       ;Read Line Status
+        AND      al , 00100000b
+        JZ      DONE1
 
     ;If empty put the VALUE in Transmit data register
     SEND_CHECK:  
-                 MOV      AH,1
-                 INT      16H
-                 JZ       DONE1
+        MOV      AH,1
+        INT      16H
+        JZ       DONE1
 
-    ;K EY PRESSED, GET IT
-                 MOV      AH,0
-                 INT      16H
-                 mov      dx , 3F8H                     ; Transmit data register
-                 out      dx , al
-                 CMP      AH,1CH
-                 JNE      NOT_ENTER
-                 INC      Y_ME
-                 cmp Y_ME,12
-                 je full_chat_me
+        ;K EY PRESSED, GET IT
+        MOV      AH,0
+        INT      16H
+        mov      dx , 3F8H                     ; Transmit data register
+        out      dx , al
+        CMP      AH,1CH
+        JNE      NOT_ENTER
+        INC      Y_ME
+        cmp Y_ME,12
+        je full_chat_me
 
-                 MOV      X_ME,0
-                 JMP      DONE_ENTER
+        MOV      X_ME,0
+        JMP      DONE_ENTER
     NOT_ENTER:  
-                ;move cursor
-                 CALL     CURSOR_ME
-                 CALL     CURSOR_GOTO
-                 INC      X_ME
-                  cmp x_ME,80
-                  jne NOT_END_OF_LINE
-                    mov X_ME,0
-                    inc Y_ME
-                    cmp Y_ME,12
-                 je full_chat_me
-                  NOT_END_OF_LINE:
-                
-                 MOV      AH,2
-                 MOV      DL,AL
-                 INT      21H
+            ;move cursor
+        CALL     CURSOR_ME
+        CALL     CURSOR_GOTO
+        INC      X_ME
+        cmp x_ME,80
+        jne NOT_END_OF_LINE
+        mov X_ME,0
+        inc Y_ME
+        cmp Y_ME,12
+        je full_chat_me
+    NOT_END_OF_LINE:
+
+        MOV      AH,2
+        MOV      DL,AL
+        INT      21H
 
     DONE_ENTER: 
 
@@ -199,63 +199,63 @@ chat_mode proc FAR
         jmp DONE1
 
         full_chat_me:
-            call scroll_up_me   
+        call scroll_up_me   
 
     DONE1:       
     
-    ;RECIEVE
-    ;Check that Data Ready
-                 mov      dx , 3FDH                     ; Line Status Register
-                 in       al , dx
-                 AND      al , 1
-                 JZ       DONT_PRINT
+        ;RECIEVE
+        ;Check that Data Ready
+        mov      dx , 3FDH                     ; Line Status Register
+        in       al , dx
+        AND      al , 1
+        JZ       DONT_PRINT
 
-    ;If Ready read the VALUE in Receive data register
-                 mov      dx , 03F8H
-                 in       al , dx
-                 mov      DL , al
+        ;If Ready read the VALUE in Receive data register
+        mov      dx , 03F8H
+        in       al , dx
+        mov      DL , al
 
-                 cmp al,7 
-                 je go_to_menu2
+        cmp al,7 
+        je go_to_menu2
 
 
-                 CMP      aL,13
-                 JNE      NOT_ENTER2
-                 INC      Y_YOU
-                cmp       Y_YOU,25
-                 je      full_chat_you
+        CMP      aL,13
+        JNE      NOT_ENTER2
+        INC      Y_YOU
+        cmp       Y_YOU,25
+        je      full_chat_you
 
-                 MOV      X_YOU,0
-                 JMP      DONT_PRINT
+        MOV      X_YOU,0
+        JMP      DONT_PRINT
     NOT_ENTER2:  
 
-                 CALL     CURSOR_YOU
-                 CALL     CURSOR_GOTO
-                 INC      X_YOU
-                    cmp X_YOU,80
-                    jne NOT_END_OF_LINE_YOU
-                    mov X_YOU,0
-                    inc Y_YOU
-                    cmp Y_YOU,25
-                    je full_chat_you
-                    NOT_END_OF_LINE_YOU:
+        CALL     CURSOR_YOU
+        CALL     CURSOR_GOTO
+        INC      X_YOU
+        cmp X_YOU,80
+        jne NOT_END_OF_LINE_YOU
+        mov X_YOU,0
+        inc Y_YOU
+        cmp Y_YOU,25
+        je full_chat_you
+    NOT_END_OF_LINE_YOU:
 
 
-                 mov      ah, 2
-                 MOV      DL,AL
-                 int      21h
+        mov      ah, 2
+        MOV      DL,AL
+        int      21h
     DONT_PRINT:
-                jmp dont_clear_you
+        jmp dont_clear_you
 
-                full_chat_you:
-                call scroll_up_you
+        full_chat_you:
+        call scroll_up_you
 
-                dont_clear_you:
-                JMP      CHAT
-    go_to_menu:
-                mov dx,3f8h
-                mov al,7
-                out dx,al
+        dont_clear_you:
+        JMP      CHAT
+    go_to_menu: 
+        mov dx,3f8h
+        mov al,7
+        out dx,al
  
    go_to_menu2:             
 ret
